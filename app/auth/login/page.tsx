@@ -82,22 +82,14 @@ export default function LoginPage() {
 
         {/* Password */}
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-foreground">
-              Contrasena
-            </Label>
-            <Link
-              href="/auth/forgot-password"
-              className="text-xs text-primary hover:text-primary/80 transition-colors"
-            >
-              Olvidaste tu contrasena?
-            </Link>
-          </div>
+          <Label htmlFor="password" className="text-foreground">
+            Contraseña
+          </Label>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Ingresa tu contrasena"
+              placeholder="Ingresa tu contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -112,6 +104,12 @@ export default function LoginPage() {
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
+          <Link
+            href="/auth/forgot-password"
+            className="text-xs text-primary hover:text-primary/80 transition-colors self-end"
+          >
+            Olvidaste tu contraseña?
+          </Link>
         </div>
 
         {/* MFA Code - visible only when API returns 401 */}

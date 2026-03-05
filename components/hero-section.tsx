@@ -7,7 +7,7 @@ export function HeroSection() {
     <section className="relative flex min-h-[90vh] items-center justify-center overflow-hidden pt-16">
       {/* Background glow */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 rounded-full bg-primary/10 blur-[128px]" />
+        <div className="absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 rounded-full bg-primary/25 blur-[128px]" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-6 text-center">
@@ -22,7 +22,7 @@ export function HeroSection() {
         </h1>
 
         <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-muted-foreground md:text-xl">
-          Automatiza conversaciones, resuelve consultas al instante y ofrece soporte 24/7 con nuestro chatbot potenciado por inteligencia artificial.
+          Descubre el extracurricular ideal para ti, encuentra actividades que se adapten a ti. Recibe recomendaciones personalizadas.
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -34,7 +34,7 @@ export function HeroSection() {
           </Button>
         </div>
 
-        <div className="mt-16 flex items-center justify-center gap-8 text-sm text-muted-foreground">
+        {/* <div className="mt-16 flex items-center justify-center gap-8 text-sm text-muted-foreground">
           <div className="flex flex-col items-center">
             <span className="text-2xl font-bold text-foreground">10M+</span>
             <span>Mensajes procesados</span>
@@ -49,7 +49,7 @@ export function HeroSection() {
             <span className="text-2xl font-bold text-foreground">{'<'}1s</span>
             <span>Tiempo de respuesta</span>
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   )
