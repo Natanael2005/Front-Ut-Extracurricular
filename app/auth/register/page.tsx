@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { AuthLayout } from "@/components/auth-layout"
@@ -15,17 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Eye, EyeOff, UserPlus, Loader2, Check, X } from "lucide-react"
-import { register, type ApiError } from "@/lib/auth-api"
-
-// Catalogo de carreras — reemplazar con datos del backend
-const CARRERAS = [
-  { id: 1, name: "Ingenieria en Desarrollo de Software" },
-  { id: 2, name: "Ingenieria en Tecnologias de la Informacion" },
-  { id: 3, name: "Ingenieria en Mecatronica" },
-  { id: 4, name: "Licenciatura en Administracion" },
-  { id: 5, name: "Licenciatura en Contaduria" },
-  { id: 6, name: "Ingenieria en Energias Renovables" },
-]
+// Importamos getCareers y el tipo Career
+import { register, getCareers, type Career, type ApiError } from "@/lib/auth-api" 
 
 const HOBBIES_OPTIONS = [
   "Programar",
@@ -67,7 +58,27 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
+  // Nuevos estados para cargar las carreras dinámicamente
+  const [careers, setCareers] = useState<Career[]>([])
+  const [isLoadingCareers, setIsLoadingCareers] = useState(true)
+
   const { checks, passed } = getPasswordStrength(formData.password)
+
+  // useEffect para cargar las carreras desde el backend al iniciar la página
+  useEffect(() => {
+    async function loadCareers() {
+      try {
+        const data = await getCareers()
+        setCareers(data)
+      } catch (err) {
+        console.error("Error al cargar las carreras:", err)
+        setError("No se pudieron cargar las carreras disponibles. Por favor recarga la página.")
+      } finally {
+        setIsLoadingCareers(false)
+      }
+    }
+    loadCareers()
+  }, [])
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -82,6 +93,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+
+    // Validación extra: asegurarse de que eligieron una carrera
+    if (!formData.career_id) {
+      setError("Por favor, selecciona una carrera.")
+      return
+    }
 
     if (passed < 4) {
       setError("La contrasena no cumple con los requisitos de seguridad.")
@@ -186,17 +203,21 @@ export default function RegisterPage() {
           />
         </div>
 
-        {/* Career */}
+        {/* Career - Actualizado para usar los datos de la API */}
         <div className="flex flex-col gap-2">
           <Label className="text-foreground">Carrera</Label>
-          <Select value={formData.career_id} onValueChange={(v) => handleChange("career_id", v)}>
+          <Select 
+            value={formData.career_id} 
+            onValueChange={(v) => handleChange("career_id", v)}
+            disabled={isLoadingCareers}
+          >
             <SelectTrigger className="bg-secondary/50 border-border text-foreground">
-              <SelectValue placeholder="Selecciona tu carrera" />
+              <SelectValue placeholder={isLoadingCareers ? "Cargando carreras..." : "Selecciona tu carrera"} />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              {CARRERAS.map((c) => (
-                <SelectItem key={c.id} value={String(c.id)} className="text-foreground">
-                  {c.name}
+              {careers.map((c) => (
+                <SelectItem key={c.career_id} value={String(c.career_id)} className="text-foreground">
+                  {c.career_name}
                 </SelectItem>
               ))}
             </SelectContent>

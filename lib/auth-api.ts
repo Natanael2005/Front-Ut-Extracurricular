@@ -13,6 +13,12 @@ export interface LoginRequest {
   mfa_code?: string
 }
 
+
+export interface Career {
+  career_id: number
+  career_name: string
+}
+
 export interface RegisterRequest {
   career_id: number
   email: string
@@ -138,4 +144,13 @@ export async function mfaVerify(userId: string, code: string): Promise<string> {
     method: "POST",
   })
   return handleResponse<string>(response)
+}
+
+
+export async function getCareers(): Promise<Career[]> {
+  const response = await fetch(`${API_BASE_URL}/auth/careers`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  })
+  return handleResponse<Career[]>(response)
 }

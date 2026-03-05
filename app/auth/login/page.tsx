@@ -32,8 +32,7 @@ export default function LoginPage() {
         ...(showMfa && mfaCode ? { mfa_code: mfaCode } : {}),
       })
       // Almacenar token y redirigir
-      // localStorage.setItem("token", token) — descomentar cuando la API este lista
-      void token
+      localStorage.setItem("token", token)
       router.push("/chat")
     } catch (err) {
       const apiError = err as ApiError
