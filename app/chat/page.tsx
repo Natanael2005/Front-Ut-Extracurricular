@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation" // 1. Importamos el enrutador
 import { Button } from "@/components/ui/button"
 import { Bot, Send, User, ArrowLeft, Sparkles } from "lucide-react"
 
@@ -38,11 +39,25 @@ const suggestedPrompts = [
 ]
 
 export default function ChatPage() {
+  const router = useRouter() // 2. Instanciamos el enrutador
+  const [isAuthorized, setIsAuthorized] = useState(false) // 3. Estado de autorización
+
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [inputValue, setInputValue] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // 4. Efecto de seguridad: Verifica el token al cargar la página
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+
+    if (!token) {
+      router.replace("/auth/login")
+    } else {
+      setIsAuthorized(true)
+    }
+  }, [router])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -53,8 +68,10 @@ export default function ChatPage() {
   }, [messages, isTyping])
 
   useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+    if (isAuthorized) {
+      inputRef.current?.focus()
+    }
+  }, [isAuthorized])
 
   const handleSend = (text?: string) => {
     const messageText = text || inputValue.trim()
@@ -100,6 +117,15 @@ export default function ChatPage() {
   }
 
   const showSuggestions = messages.length <= 1 && !isTyping
+
+  // 5. Pantalla de carga mientras se verifica el acceso
+  if (!isAuthorized) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+        <p className="text-sm text-muted-foreground animate-pulse">Verificando credenciales...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-dvh flex-col bg-background">

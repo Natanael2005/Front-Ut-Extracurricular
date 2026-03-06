@@ -3,7 +3,9 @@ import { HeroSection } from "@/components/hero-section"
 import { FeaturesSection } from "@/components/features-section"
 import { DemoSection } from "@/components/demo-section"
 import { Footer } from "@/components/footer"
-import { ChatbotWidget } from "@/components/chatbot-widget"
+
+// Importa el widget del chatbot en la landing page
+// // import { ChatbotWidget } from "@/components/chatbot-widget"
 
 export default function Page() {
   return (
@@ -15,7 +17,9 @@ export default function Page() {
         <DemoSection />
       </main>
       <Footer />
-      <ChatbotWidget />
+
+      {/* Renderiza el widget del chatbot en la landing page */}
+      {/* <ChatbotWidget /> */}
     </>
   )
 }
