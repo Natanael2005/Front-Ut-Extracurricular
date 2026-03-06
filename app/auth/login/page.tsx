@@ -20,19 +20,23 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
 
     try {
-      const token = await login({
+      // 1. Cambiamos 'token' por 'data' porque ahora recibimos un objeto completo
+      const data = await login({
         email,
         password,
         ...(showMfa && mfaCode ? { mfa_code: mfaCode } : {}),
       })
-      // Almacenar token y redirigir
-      localStorage.setItem("token", token)
+
+      // 2. Extraemos las propiedades exactas del objeto para guardarlas
+      localStorage.setItem("token", data.access_token)
+      localStorage.setItem("user_name", data.user_name)
+
       router.push("/chat")
     } catch (err) {
       const apiError = err as ApiError
@@ -41,7 +45,7 @@ export default function LoginPage() {
         setShowMfa(true)
         setError("Se requiere el codigo de autenticacion MFA.")
       } else if (apiError.status === 403) {
-        setError("Cuenta bloqueada temporalmente. Intenta de nuevo en 15 minutos.")
+        setError("Cuenta bloqueada temporalmente. Intenta de nuevo en 15 minuto.")
       } else {
         setError(apiError.message || "Error al iniciar sesion.")
       }
