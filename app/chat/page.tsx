@@ -2,9 +2,10 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation" // 1. Importamos el enrutador
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Bot, Send, User, ArrowLeft, Sparkles } from "lucide-react"
+import { useAuth } from "@/context/auth-context" // 1. Importamos tu nuevo hook global
 
 interface Message {
   id: number
@@ -39,8 +40,10 @@ const suggestedPrompts = [
 ]
 
 export default function ChatPage() {
-  const router = useRouter() // 2. Instanciamos el enrutador
-  const [isAuthorized, setIsAuthorized] = useState(false) // 3. Estado de autorización
+  const router = useRouter()
+  
+  // 2. Extraemos el estado de carga y autorización desde el contexto global
+  const { isAuthenticated, isLoading } = useAuth() 
 
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [inputValue, setInputValue] = useState("")
@@ -48,16 +51,13 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // 4. Efecto de seguridad: Verifica el token al cargar la página
+  // 3. El nuevo "Guardia" conectado al estado global
   useEffect(() => {
-    const token = localStorage.getItem("token")
-
-    if (!token) {
+    // Si ya terminó de verificar (no está cargando) y resulta que NO está autenticado, lo expulsamos.
+    if (!isLoading && !isAuthenticated) {
       router.replace("/auth/login")
-    } else {
-      setIsAuthorized(true)
     }
-  }, [router])
+  }, [isLoading, isAuthenticated, router])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -68,10 +68,11 @@ export default function ChatPage() {
   }, [messages, isTyping])
 
   useEffect(() => {
-    if (isAuthorized) {
+    // 4. Solo hacemos autofocus si ya cargó y sabemos que está autorizado
+    if (!isLoading && isAuthenticated) {
       inputRef.current?.focus()
     }
-  }, [isAuthorized])
+  }, [isLoading, isAuthenticated])
 
   const handleSend = (text?: string) => {
     const messageText = text || inputValue.trim()
@@ -118,8 +119,9 @@ export default function ChatPage() {
 
   const showSuggestions = messages.length <= 1 && !isTyping
 
-  // 5. Pantalla de carga mientras se verifica el acceso
-  if (!isAuthorized) {
+  // 5. Pantalla de carga inteligente: 
+  // Se muestra si el contexto está cargando, o si no está autenticado (para evitar que la interfaz parpadee antes de ser expulsado).
+  if (isLoading || !isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
         <p className="text-sm text-muted-foreground animate-pulse">Verificando credenciales...</p>

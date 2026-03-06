@@ -8,10 +8,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, LogIn, Shield, Loader2 } from "lucide-react"
-import { login, type ApiError } from "@/lib/auth-api"
+
+// 1. Renombramos la importación de la API a 'apiLogin' para no confundirla con la del contexto
+import { login as apiLogin, type ApiError } from "@/lib/auth-api" 
+// 2. Importamos tu nuevo hook global
+import { useAuth } from "@/context/auth-context" 
 
 export default function LoginPage() {
   const router = useRouter()
+  
+  // 3. Extraemos la función login de nuestro estado global
+  const { login } = useAuth() 
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [mfaCode, setMfaCode] = useState("")
@@ -26,26 +34,26 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // 1. Cambiamos 'token' por 'data' porque ahora recibimos un objeto completo
-      const data = await login({
+      // 4. Usamos apiLogin para hacer la petición al servidor
+      const data = await apiLogin({
         email,
         password,
         ...(showMfa && mfaCode ? { mfa_code: mfaCode } : {}),
       })
 
-      // 2. Extraemos las propiedades exactas del objeto para guardarlas
-      localStorage.setItem("token", data.access_token)
-      localStorage.setItem("user_name", data.user_name)
+      // 5. ¡LA MAGIA AQUÍ! 
+      // Le pasamos los datos a tu contexto. Él se encarga de guardarlo en localStorage 
+      // y de avisarle instantáneamente al Navbar que ya iniciaste sesión.
+      login(data.access_token, data.user_name)
 
       router.push("/chat")
     } catch (err) {
       const apiError = err as ApiError
       if (apiError.status === 401 && !showMfa) {
-        // La API solicita el codigo MFA
         setShowMfa(true)
         setError("Se requiere el codigo de autenticacion MFA.")
       } else if (apiError.status === 403) {
-        setError("Cuenta bloqueada temporalmente. Intenta de nuevo en 15 minuto.")
+        setError("Cuenta bloqueada temporalmente. Intenta de nuevo en 1 minuto.")
       } else {
         setError(apiError.message || "Error al iniciar sesion.")
       }

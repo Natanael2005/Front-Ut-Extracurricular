@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
+// Ya no necesitamos useEffect aquí
 import { Button } from "@/components/ui/button"
 import { Menu, X, Bot, LogOut } from "lucide-react"
+import { useAuth } from "@/context/auth-context" // 1. Importamos el contexto global
 
 // Enlaces de navegación principal
 const navLinks = [
@@ -12,36 +13,14 @@ const navLinks = [
 ]
 
 export function Navbar() {
-  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  // Estados para la sesión
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user_name, setUserName] = useState("")
+  // 2. Extraemos todo el estado directamente de nuestro proveedor global
+  const { user_name, isAuthenticated, isLoading, logout } = useAuth()
 
-  useEffect(() => {
-    // Verificamos si existe el token de sesión
-    const token = localStorage.getItem("token")
-
-    // Aquí leemos el nombre del usuario. 
-    // Nota: Asegúrate de guardar el nombre en el localStorage al momento de hacer el login.
-    const storedName = localStorage.getItem("user_name")
-
-    if (token) {
-      setIsLoggedIn(true)
-      if (storedName) {
-        setUserName(storedName)
-      }
-    }
-  }, [])
-
-  const handleLogout = () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("user_name") // Limpiamos también el nombre
-    setIsLoggedIn(false)
-    setUserName("")
+  const handleMobileLogout = () => {
+    logout()
     setMobileOpen(false)
-    router.push("/") // Redirigimos al inicio
   }
 
   return (
@@ -70,9 +49,12 @@ export function Navbar() {
           </nav>
         </div>
 
-        {/* Botones derecha */}
+        {/* Botones derecha (Escritorio) */}
         <div className="ml-auto hidden items-center gap-3 md:flex">
-          {isLoggedIn ? (
+          {/* 3. Lógica antimismtach: Si está cargando, no mostramos botones temporalmente */}
+          {isLoading ? (
+            <div className="w-40 h-8" /> // Espacio reservado para evitar que el diseño salte
+          ) : isAuthenticated ? (
             <>
               <span className="text-sm text-muted-foreground mr-2">
                 Bienvenido, <span className="font-semibold text-foreground">{user_name || "Usuario"}</span>
@@ -90,7 +72,7 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleLogout}
+                onClick={logout} // Llamamos al logout global
                 className="text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
                 title="Cerrar sesión"
               >
@@ -130,6 +112,7 @@ export function Navbar() {
         </button>
       </div>
 
+      {/* Menú móvil */}
       {mobileOpen && (
         <div className="border-t border-border bg-background px-6 py-4 md:hidden">
           <nav className="flex flex-col gap-4">
@@ -145,9 +128,14 @@ export function Navbar() {
             ))}
 
             <div className="flex flex-col gap-2 pt-2 border-t border-border/50 mt-2">
-              {isLoggedIn ? (
+              {isLoading ? (
+                <div className="h-20" /> // Espacio de carga móvil
+              ) : isAuthenticated ? (
                 <>
-
+                  {/* Restauré el mensaje de bienvenida que faltaba en tu versión móvil */}
+                  <span className="text-sm text-muted-foreground py-2">
+                    Bienvenido, <span className="font-semibold text-foreground">{user_name || "Usuario"}</span>
+                  </span>
 
                   <Button
                     variant="ghost"
@@ -161,7 +149,7 @@ export function Navbar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleLogout}
+                    onClick={handleMobileLogout} // Cierra sesión y contrae el menú
                     className="justify-start text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors mt-1"
                   >
                     Cerrar sesión

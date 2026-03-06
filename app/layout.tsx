@@ -1,11 +1,19 @@
 import React from "react"
 import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
-
+import { AuthProvider } from "@/context/auth-context"
 import './globals.css'
 
-const _inter = Inter({ subsets: ['latin'] })
-const _jetbrainsMono = JetBrains_Mono({ subsets: ['latin'] })
+// 1. Configuramos las fuentes para exportar sus variables CSS
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-sans' 
+})
+
+const jetbrainsMono = JetBrains_Mono({ 
+  subsets: ['latin'],
+  variable: '--font-mono'
+})
 
 export const metadata: Metadata = {
   title: 'NexaBot - Asistente IA Conversacional',
@@ -22,8 +30,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es">
-      <body className="font-sans antialiased">{children}</body>
+    // 2. Inyectamos las variables de las fuentes en la etiqueta html
+    <html lang="es" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+      <body className="font-sans antialiased min-h-screen flex flex-col bg-background text-foreground">
+        
+        {/* 3. Envolvemos nuestra aplicación con el estado global de autenticación */}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+        
+      </body>
     </html>
   )
 }
