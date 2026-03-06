@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Bot } from "lucide-react"
+import { Menu, X, Bot, LogOut } from "lucide-react"
 
 // Enlaces de navegación principal
 const navLinks = [
@@ -11,7 +12,37 @@ const navLinks = [
 ]
 
 export function Navbar() {
+  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Estados para la sesión
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user_name, setUserName] = useState("")
+
+  useEffect(() => {
+    // Verificamos si existe el token de sesión
+    const token = localStorage.getItem("token")
+
+    // Aquí leemos el nombre del usuario. 
+    // Nota: Asegúrate de guardar el nombre en el localStorage al momento de hacer el login.
+    const storedName = localStorage.getItem("user_name")
+
+    if (token) {
+      setIsLoggedIn(true)
+      if (storedName) {
+        setUserName(storedName)
+      }
+    }
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    localStorage.removeItem("user_name") // Limpiamos también el nombre
+    setIsLoggedIn(false)
+    setUserName("")
+    setMobileOpen(false)
+    router.push("/") // Redirigimos al inicio
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/100 bg-background/80 backdrop-blur-xl">
@@ -40,23 +71,52 @@ export function Navbar() {
         </div>
 
         {/* Botones derecha */}
-        <div className="ml-auto hidden items-center gap-2 md:flex">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="px-2 text-muted-foreground hover:text-foreground"
-            asChild
-          >
-            <a href="/auth/login">Iniciar sesion</a>
-          </Button>
+        <div className="ml-auto hidden items-center gap-3 md:flex">
+          {isLoggedIn ? (
+            <>
+              <span className="text-sm text-muted-foreground mr-2">
+                Bienvenido, <span className="font-semibold text-foreground">{user_name || "Usuario"}</span>
+              </span>
 
-          <Button
-            size="sm"
-            className="px-2 bg-primary text-primary-foreground hover:bg-primary/90"
-            asChild
-          >
-            <a href="/auth/register">Registrarse</a>
-          </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-2 text-muted-foreground hover:text-foreground"
+                asChild
+              >
+                <a href="/chat">Ir al Chat</a>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                title="Cerrar sesión"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-2 text-muted-foreground hover:text-foreground"
+                asChild
+              >
+                <a href="/auth/login">Iniciar sesion</a>
+              </Button>
+
+              <Button
+                size="sm"
+                className="px-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                asChild
+              >
+                <a href="/auth/register">Registrarse</a>
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Botón menú móvil */}
@@ -84,23 +144,49 @@ export function Navbar() {
               </a>
             ))}
 
-            <div className="flex flex-col gap-2 pt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="justify-start text-muted-foreground"
-                asChild
-              >
-                <a href="/auth/login">Iniciar sesion</a>
-              </Button>
+            <div className="flex flex-col gap-2 pt-2 border-t border-border/50 mt-2">
+              {isLoggedIn ? (
+                <>
 
-              <Button
-                size="sm"
-                className="bg-primary text-primary-foreground"
-                asChild
-              >
-                <a href="/auth/register">Registrarse</a>
-              </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start text-muted-foreground hover:text-foreground"
+                    asChild
+                  >
+                    <a href="/chat" onClick={() => setMobileOpen(false)}>Ir al Chat</a>
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="justify-start text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors mt-1"
+                  >
+                    Cerrar sesión
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start text-muted-foreground"
+                    asChild
+                  >
+                    <a href="/auth/login" onClick={() => setMobileOpen(false)}>Iniciar sesion</a>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    className="bg-primary text-primary-foreground"
+                    asChild
+                  >
+                    <a href="/auth/register" onClick={() => setMobileOpen(false)}>Registrarse</a>
+                  </Button>
+                </>
+              )}
             </div>
           </nav>
         </div>

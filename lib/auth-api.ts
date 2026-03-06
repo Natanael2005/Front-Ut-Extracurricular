@@ -14,6 +14,13 @@ export interface LoginRequest {
 }
 
 
+// NUEVO: Interfaz para la respuesta del Login
+export interface LoginResponse {
+  access_token: string
+  token_type: string
+  user_name: string
+}
+
 export interface Career {
   career_id: number
   career_name: string
@@ -94,13 +101,13 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 // ---------- Endpoints ----------
 
-export async function login(data: LoginRequest): Promise<string> {
+export async function login(data: LoginRequest): Promise<LoginResponse> {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   })
-  return handleResponse<string>(response)
+  return handleResponse<LoginResponse>(response)
 }
 
 export async function register(data: RegisterRequest): Promise<string> {
