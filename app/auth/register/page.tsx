@@ -227,7 +227,7 @@ export default function RegisterPage() {
         {/* Password */}
         <div className="flex flex-col gap-2">
           <Label htmlFor="reg_password" className="text-foreground">
-            Contrasena
+            Contraseña
           </Label>
           <div className="relative">
             <Input
