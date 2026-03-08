@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { AuthProvider } from "@/context/auth-context"
+import { NoiseBackground } from "@/components/ui/noisebackground"
 import './globals.css'
 
 // 1. Configuramos las fuentes para exportar sus variables CSS
@@ -32,11 +33,14 @@ export default function RootLayout({
   return (
     // 2. Inyectamos las variables de las fuentes en la etiqueta html
     <html lang="es" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="font-sans antialiased min-h-screen flex flex-col bg-background text-foreground">
+      <body className="font-sans antialiased min-h-screen flex flex-col bg-background text-foreground relative">
+        <NoiseBackground />
         
         {/* 3. Envolvemos nuestra aplicación con el estado global de autenticación */}
         <AuthProvider>
-          {children}
+          <div className="relative z-10">
+            {children}
+          </div>
         </AuthProvider>
         
       </body>
