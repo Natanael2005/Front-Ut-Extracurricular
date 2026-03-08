@@ -2,12 +2,37 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
+import { motion, Variants } from "framer-motion" // Importamos motion
 import { AuthLayout } from "@/components/auth-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Mail } from "lucide-react" 
 import { forgotPassword, type ApiError } from "@/lib/auth-api"
+
+// --- CONFIGURACIÓN DE ANIMACIONES (Sin errores de tipos) ---
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+}
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { 
+      duration: 0.5, 
+      ease: [0.22, 1, 0.36, 1] // Curva de seda optimizada
+    }
+  }
+}
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -25,39 +50,50 @@ export default function ForgotPasswordPage() {
       setSent(true)
     } catch (err) {
       const apiError = err as ApiError
-      // La API siempre devuelve éxito (anti-enumeración)
-      // Pero manejamos errores de red o validación
       setError(apiError.message || "Error al enviar la solicitud.")
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Vista de éxito (Correo enviado) - Estilo limpio sin íconos
+  // Vista de éxito (Correo enviado)
   if (sent) {
     return (
       <AuthLayout
         title="Revisa tu correo"
         description="Hemos enviado las instrucciones para restablecer tu contraseña."
       >
-        <div className="flex flex-col gap-4 py-2">
-          <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-4 text-center">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col gap-4 py-2"
+        >
+          <motion.div 
+            variants={itemVariants}
+            className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-4 text-center"
+          >
             <p className="text-sm text-foreground">
               Si el correo <span className="font-bold text-primary">{email}</span> está registrado, recibirás un enlace.
             </p>
-          </div>
+          </motion.div>
           
-          <p className="text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-2">
-            El enlace expira en 15 minutos y es de un solo uso.
-          </p>
-
-          <Button 
-            className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-full rounded-xl font-medium shadow-lg shadow-primary/20" 
-            asChild
+          <motion.p 
+            variants={itemVariants}
+            className="text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-2"
           >
-            <Link href="/auth/login">Volver al inicio de sesión</Link>
-          </Button>
-        </div>
+            El enlace expira en 15 minutos y es de un solo uso.
+          </motion.p>
+
+          <motion.div variants={itemVariants}>
+            <Button 
+              className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-full rounded-xl font-medium shadow-lg shadow-primary/20" 
+              asChild
+            >
+              <Link href="/auth/login">Volver al inicio de sesión</Link>
+            </Button>
+          </motion.div>
+        </motion.div>
       </AuthLayout>
     )
   }
@@ -68,15 +104,23 @@ export default function ForgotPasswordPage() {
       title="Recuperar contraseña"
       description="Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña."
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <motion.form 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        onSubmit={handleSubmit} 
+        className="flex flex-col gap-5"
+      >
         {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <motion.div 
+            variants={itemVariants}
+            className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          >
             {error}
-          </div>
+          </motion.div>
         )}
 
-        {/* Input con ícono de correo regresado */}
-        <div className="flex flex-col gap-1.5 relative">
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 relative">
           <Label htmlFor="email" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">
             Correo electrónico
           </Label>
@@ -92,13 +136,13 @@ export default function ForgotPasswordPage() {
               className="pl-9 bg-secondary/30 border-border text-foreground placeholder:text-muted-foreground/60 rounded-xl"
             />
           </div>
-        </div>
+        </motion.div>
 
-        <div className="flex flex-col gap-2 mt-2">
+        <motion.div variants={itemVariants} className="flex flex-col gap-2 mt-2">
           <Button
             type="submit"
             disabled={isLoading}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-full rounded-xl font-medium shadow-lg shadow-primary/20"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-full rounded-xl font-medium shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isLoading ? "Enviando..." : "Enviar enlace de recuperación"}
@@ -110,8 +154,8 @@ export default function ForgotPasswordPage() {
               Inicia sesión
             </Link>
           </p>
-        </div>
-      </form>
+        </motion.div>
+      </motion.form>
     </AuthLayout>
   )
 }

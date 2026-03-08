@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { motion, Variants } from "framer-motion"
 
-// Importamos el layout maestro
+// Importamos el layout maestro y componentes UI
 import { AuthLayout } from "@/components/auth-layout" 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,6 +31,30 @@ import {
 } from "lucide-react"
 
 import { register, getCareers, type Career, type ApiError } from "@/lib/auth-api"
+
+// --- CONFIGURACIÓN DE ANIMACIONES (Sin errores de tipos) ---
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05, // Entrada rápida por ser muchos campos
+      delayChildren: 0.2
+    }
+  }
+}
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { 
+      duration: 0.4, 
+      ease: [0.22, 1, 0.36, 1] // Curva de seda optimizada
+    }
+  }
+}
 
 const HOBBIES_OPTIONS = [
   "Programar", "Leer", "Deportes", "Musica", 
@@ -139,16 +164,22 @@ export default function RegisterPage() {
       description="Regístrate como estudiante para acceder a todas las funcionalidades."
       view="register"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Mensaje de error */}
+      <motion.form 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        onSubmit={handleSubmit} 
+        className="flex flex-col gap-4"
+      >
+        {/* Mensaje de error animado */}
         {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <motion.div variants={itemVariants} className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {error}
-          </div>
+          </motion.div>
         )}
 
-        {/* Nombres y Apellidos en dos columnas */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Nombres y Apellidos */}
+        <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5 relative">
             <Label htmlFor="first_name" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Nombre</Label>
             <div className="relative">
@@ -159,7 +190,7 @@ export default function RegisterPage() {
                 value={formData.first_name}
                 onChange={(e) => handleChange("first_name", e.target.value)}
                 required
-                className="pl-9 bg-secondary/30 border-border text-foreground placeholder:text-muted-foreground/60 rounded-xl"
+                className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl"
               />
             </div>
           </div>
@@ -173,14 +204,14 @@ export default function RegisterPage() {
                 value={formData.last_name}
                 onChange={(e) => handleChange("last_name", e.target.value)}
                 required
-                className="pl-9 bg-secondary/30 border-border text-foreground placeholder:text-muted-foreground/60 rounded-xl"
+                className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl"
               />
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Correo */}
-        <div className="flex flex-col gap-1.5 relative">
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 relative">
           <Label htmlFor="email" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Correo institucional</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -191,13 +222,13 @@ export default function RegisterPage() {
               value={formData.email}
               onChange={(e) => handleChange("email", e.target.value)}
               required
-              className="pl-9 bg-secondary/30 border-border text-foreground placeholder:text-muted-foreground/60 rounded-xl"
+              className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl"
             />
           </div>
-        </div>
+        </motion.div>
 
-        {/* Matrícula y Horario en dos columnas para ahorrar espacio vertical */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Matrícula y Horario */}
+        <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5 relative">
             <Label htmlFor="matricula" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Matrícula</Label>
             <div className="relative">
@@ -208,7 +239,7 @@ export default function RegisterPage() {
                 value={formData.matricula}
                 onChange={(e) => handleChange("matricula", e.target.value)}
                 required
-                className="pl-9 bg-secondary/30 border-border text-foreground placeholder:text-muted-foreground/60 rounded-xl"
+                className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl"
               />
             </div>
           </div>
@@ -229,10 +260,10 @@ export default function RegisterPage() {
               </Select>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Carrera */}
-        <div className="flex flex-col gap-1.5 relative">
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 relative">
           <Label className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Carrera</Label>
           <div className="relative">
             <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
@@ -246,21 +277,17 @@ export default function RegisterPage() {
               </SelectTrigger>
               <SelectContent position="popper" avoidCollisions={false} className="bg-card border-border w-[var(--radix-select-trigger-width)] max-h-[300px]">
                 {careers.map((c) => (
-                  <SelectItem
-                    key={c.career_id}
-                    value={String(c.career_id)}
-                    className="text-foreground whitespace-normal py-2 pr-2"
-                  >
+                  <SelectItem key={c.career_id} value={String(c.career_id)} className="text-foreground whitespace-normal py-2 pr-2">
                     {c.career_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-        </div>
+        </motion.div>
 
         {/* Contraseña */}
-        <div className="flex flex-col gap-1.5 relative">
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 relative">
           <Label htmlFor="reg_password" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Contraseña</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -271,21 +298,19 @@ export default function RegisterPage() {
               value={formData.password}
               onChange={(e) => handleChange("password", e.target.value)}
               required
-              className="pl-9 pr-10 bg-secondary/30 border-border text-foreground placeholder:text-muted-foreground/60 rounded-xl"
+              className="pl-9 pr-10 bg-secondary/30 border-border text-foreground rounded-xl"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           
-          {/* Barras de seguridad y condiciones */}
           {formData.password && (
-            <div className="mt-2 flex flex-col gap-2">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 flex flex-col gap-2">
               <div className="flex gap-1 h-1.5">
                 {[1, 2, 3, 4].map((i) => (
                   <div
@@ -314,19 +339,20 @@ export default function RegisterPage() {
                   </span>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </motion.div>
 
-        {/* Hobbies - Ocultos detrás de un toggle visual pequeño para ahorrar espacio, o mostrados de forma compacta */}
-        <div className="flex flex-col gap-1.5 mt-1">
+        {/* Hobbies */}
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 mt-1">
           <Label className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Intereses / Hobbies</Label>
           <div className="flex flex-wrap gap-1.5">
             {HOBBIES_OPTIONS.map((hobby) => {
               const selected = selectedHobbies.includes(hobby)
               return (
-                <button
+                <motion.button
                   key={hobby}
+                  whileTap={{ scale: 0.95 }}
                   type="button"
                   onClick={() => toggleHobby(hobby)}
                   className={`rounded-full border px-2.5 py-1 text-[10px] font-medium transition-all ${selected
@@ -335,22 +361,24 @@ export default function RegisterPage() {
                     }`}
                 >
                   {hobby}
-                </button>
+                </motion.button>
               )
             })}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Submit */}
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-full rounded-xl font-medium shadow-lg shadow-primary/20"
-        >
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isLoading ? "Registrando..." : "Crear cuenta"}
-        </Button>
-      </form>
+        {/* Submit con micro-interacción */}
+        <motion.div variants={itemVariants}>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-full rounded-xl font-medium shadow-lg shadow-primary/20 active:scale-[0.98]"
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? "Registrando..." : "Crear cuenta"}
+          </Button>
+        </motion.div>
+      </motion.form>
     </AuthLayout>
   )
 }
