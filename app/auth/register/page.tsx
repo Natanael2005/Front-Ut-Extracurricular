@@ -162,7 +162,7 @@ export default function RegisterPage() {
             </Label>
             <Input
               id="last_name"
-              placeholder="Ramirez Fernandez"
+              placeholder="Tus Nombres"
               value={formData.last_name}
               onChange={(e) => handleChange("last_name", e.target.value)}
               required
