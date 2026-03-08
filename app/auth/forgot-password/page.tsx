@@ -6,7 +6,7 @@ import { AuthLayout } from "@/components/auth-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Mail, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react"
+import { Loader2, Mail } from "lucide-react" 
 import { forgotPassword, type ApiError } from "@/lib/auth-api"
 
 export default function ForgotPasswordPage() {
@@ -25,50 +25,48 @@ export default function ForgotPasswordPage() {
       setSent(true)
     } catch (err) {
       const apiError = err as ApiError
-      // La API siempre devuelve exito (anti-enumeracion)
-      // Pero manejamos errores de red o validacion
+      // La API siempre devuelve éxito (anti-enumeración)
+      // Pero manejamos errores de red o validación
       setError(apiError.message || "Error al enviar la solicitud.")
     } finally {
       setIsLoading(false)
     }
   }
 
+  // Vista de éxito (Correo enviado) - Estilo limpio sin íconos
   if (sent) {
     return (
       <AuthLayout
         title="Revisa tu correo"
-        description="Hemos enviado las instrucciones para restablecer tu contrasena."
+        description="Hemos enviado las instrucciones para restablecer tu contraseña."
       >
-        <div className="flex flex-col items-center gap-6 py-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-            <CheckCircle2 className="h-8 w-8 text-primary" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              Si el correo <span className="font-medium text-foreground">{email}</span> esta
-              registrado, recibiras un enlace para restablecer tu contrasena.
-            </p>
-            <p className="mt-3 text-xs text-muted-foreground">
-              El enlace expira en 15 minutos y es de un solo uso.
+        <div className="flex flex-col gap-4 py-2">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-4 text-center">
+            <p className="text-sm text-foreground">
+              Si el correo <span className="font-bold text-primary">{email}</span> está registrado, recibirás un enlace.
             </p>
           </div>
-          <div className="flex w-full flex-col gap-3">
-            <Button variant="outline" className="border-border text-foreground bg-transparent" asChild>
-              <Link href="/auth/login">
-                <ArrowLeft className="h-4 w-4" />
-                Volver al inicio de sesion
-              </Link>
-            </Button>
-          </div>
+          
+          <p className="text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-2">
+            El enlace expira en 15 minutos y es de un solo uso.
+          </p>
+
+          <Button 
+            className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-full rounded-xl font-medium shadow-lg shadow-primary/20" 
+            asChild
+          >
+            <Link href="/auth/login">Volver al inicio de sesión</Link>
+          </Button>
         </div>
       </AuthLayout>
     )
   }
 
+  // Vista principal (Formulario)
   return (
     <AuthLayout
-      title="Recuperar contrasena"
-      description="Ingresa tu correo electronico y te enviaremos un enlace para restablecer tu contrasena."
+      title="Recuperar contraseña"
+      description="Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña."
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {error && (
@@ -77,40 +75,42 @@ export default function ForgotPasswordPage() {
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="email" className="text-foreground">
-            Correo electronico
+        {/* Input con ícono de correo regresado */}
+        <div className="flex flex-col gap-1.5 relative">
+          <Label htmlFor="email" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">
+            Correo electrónico
           </Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="tu.matricula@utcancun.edu.mx"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground"
-          />
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="email"
+              type="email"
+              placeholder="matricula@utcancun.edu.mx"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="pl-9 bg-secondary/30 border-border text-foreground placeholder:text-muted-foreground/60 rounded-xl"
+            />
+          </div>
         </div>
 
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="mt-1 bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Mail className="h-4 w-4" />
-          )}
-          {isLoading ? "Enviando..." : "Enviar enlace de recuperacion"}
-        </Button>
+        <div className="flex flex-col gap-2 mt-2">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-full rounded-xl font-medium shadow-lg shadow-primary/20"
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? "Enviando..." : "Enviar enlace de recuperación"}
+          </Button>
 
-        <p className="text-center text-sm text-muted-foreground">
-          <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition-colors inline-flex items-center gap-1">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Volver al inicio de sesion
-          </Link>
-        </p>
+          <p className="text-center text-sm text-muted-foreground mt-2">
+            ¿Recordaste tu contraseña?{" "}
+            <Link href="/auth/login" className="text-primary hover:text-primary/80 font-semibold transition-colors">
+              Inicia sesión
+            </Link>
+          </p>
+        </div>
       </form>
     </AuthLayout>
   )
