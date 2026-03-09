@@ -1,13 +1,12 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 // Ya no necesitamos useEffect aquí
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Bot, LogOut, ArrowLeft } from "lucide-react"
+import { Menu, X, Bot, LogOut } from "lucide-react"
 import { useAuth } from "@/context/auth-context" // 1. Importamos el contexto global
 
-// Enlaces de navegación principal
 const navLinks = [
   { label: "Producto", href: "#features" },
   { label: "Como funciona", href: "#como-funciona" },
@@ -20,8 +19,6 @@ interface NavbarProps {
 
 export function Navbar({ backButtonOnly = false, backHref = "/" }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
-
-  // 2. Extraemos todo el estado directamente de nuestro proveedor global
   const { user_name, isAuthenticated, isLoading, logout } = useAuth()
 
   // Si solo se muestra el botón de volver, renderizar una versión simplificada
@@ -56,15 +53,13 @@ export function Navbar({ backButtonOnly = false, backHref = "/" }: NavbarProps) 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/100 bg-card">
       <div className="flex h-16 w-full items-center px-5">
-
-        {/* Grupo izquierdo: logo + navegación */}
         <div className="flex items-center gap-10">
-          <a href="#" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
               <Bot className="text-primary-foreground" />
             </div>
             <span className="text-lg font-bold text-foreground">NexaBot</span>
-          </a>
+          </Link>
 
           <nav className="hidden items-center gap-4 md:flex">
             {navLinks.map((link) => (
@@ -79,14 +74,12 @@ export function Navbar({ backButtonOnly = false, backHref = "/" }: NavbarProps) 
           </nav>
         </div>
 
-        {/* Botones derecha (Escritorio) */}
         <div className="ml-auto hidden items-center gap-3 md:flex">
-          {/* 3. Lógica antimismtach: Si está cargando, no mostramos botones temporalmente */}
           {isLoading ? (
-            <div className="w-40 h-8" /> // Espacio reservado para evitar que el diseño salte
+            <div className="h-8 w-40" />
           ) : isAuthenticated ? (
             <>
-              <span className="text-sm text-muted-foreground mr-2">
+              <span className="mr-2 text-sm text-muted-foreground">
                 Bienvenido, <span className="font-semibold text-foreground">{user_name || "Usuario"}</span>
               </span>
 
@@ -96,34 +89,31 @@ export function Navbar({ backButtonOnly = false, backHref = "/" }: NavbarProps) 
                 className="px-2 text-muted-foreground hover:text-foreground"
                 asChild
               >
-                <a href="/chat">Ir al Chat</a>
+                <Link href="/chat">Ir al Chat</Link>
               </Button>
 
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={logout} // Llamamos al logout global
-                className="text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                onClick={logout}
+                className="text-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground"
                 title="Cerrar sesión"
               >
                 <LogOut className="h-5 w-5" />
               </Button>
             </>
           ) : (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="px-2 text-muted-foreground hover:text-foreground"
-                asChild
-              >
-                <a href="/auth/login">Iniciar sesion</a>
-              </Button>
-            </>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="px-2 text-muted-foreground hover:text-foreground"
+              asChild
+            >
+              <Link href="/auth/login">Iniciar sesion</Link>
+            </Button>
           )}
         </div>
 
-        {/* Botón menú móvil */}
         <button
           type="button"
           className="ml-auto text-foreground md:hidden"
@@ -134,7 +124,6 @@ export function Navbar({ backButtonOnly = false, backHref = "/" }: NavbarProps) 
         </button>
       </div>
 
-      {/* Menú móvil */}
       {mobileOpen && (
         <div className="border-t border-border bg-background px-6 py-4 md:hidden">
           <nav className="flex flex-col gap-4">
@@ -149,13 +138,12 @@ export function Navbar({ backButtonOnly = false, backHref = "/" }: NavbarProps) 
               </a>
             ))}
 
-            <div className="flex flex-col gap-2 pt-2 border-t border-border/50 mt-2">
+            <div className="mt-2 flex flex-col gap-2 border-t border-border/50 pt-2">
               {isLoading ? (
-                <div className="h-20" /> // Espacio de carga móvil
+                <div className="h-20" />
               ) : isAuthenticated ? (
                 <>
-                  {/* Restauré el mensaje de bienvenida que faltaba en tu versión móvil */}
-                  <span className="text-sm text-muted-foreground py-2">
+                  <span className="py-2 text-sm text-muted-foreground">
                     Bienvenido, <span className="font-semibold text-foreground">{user_name || "Usuario"}</span>
                   </span>
 
@@ -165,35 +153,32 @@ export function Navbar({ backButtonOnly = false, backHref = "/" }: NavbarProps) 
                     className="justify-start text-muted-foreground hover:text-foreground"
                     asChild
                   >
-                    <a href="/chat" onClick={() => setMobileOpen(false)}>Ir al Chat</a>
+                    <Link href="/chat" onClick={() => setMobileOpen(false)}>
+                      Ir al Chat
+                    </Link>
                   </Button>
 
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleMobileLogout} // Cierra sesión y contrae el menú
-                    className="justify-start text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors mt-1"
+                    onClick={handleMobileLogout}
+                    className="mt-1 justify-start text-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground"
                   >
                     Cerrar sesión
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="justify-start text-muted-foreground"
-                    asChild
-                  >
-                    <a href="/auth/login" onClick={() => setMobileOpen(false)}>Iniciar sesion</a>
+                  <Button variant="ghost" size="sm" className="justify-start text-muted-foreground" asChild>
+                    <Link href="/auth/login" onClick={() => setMobileOpen(false)}>
+                      Iniciar sesion
+                    </Link>
                   </Button>
 
-                  <Button
-                    size="sm"
-                    className="bg-primary text-primary-foreground"
-                    asChild
-                  >
-                    <a href="/auth/register" onClick={() => setMobileOpen(false)}>Registrarse</a>
+                  <Button size="sm" className="bg-primary text-primary-foreground" asChild>
+                    <Link href="/auth/register" onClick={() => setMobileOpen(false)}>
+                      Registrarse
+                    </Link>
                   </Button>
                 </>
               )}
