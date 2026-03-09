@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 // Ya no necesitamos useEffect aquí
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Bot, LogOut } from "lucide-react"
+import { Menu, X, Bot, LogOut, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/context/auth-context" // 1. Importamos el contexto global
 
 // Enlaces de navegación principal
@@ -12,11 +13,40 @@ const navLinks = [
   { label: "Como funciona", href: "#como-funciona" },
 ]
 
-export function Navbar() {
+interface NavbarProps {
+  backButtonOnly?: boolean
+  backHref?: string
+}
+
+export function Navbar({ backButtonOnly = false, backHref = "/" }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   // 2. Extraemos todo el estado directamente de nuestro proveedor global
   const { user_name, isAuthenticated, isLoading, logout } = useAuth()
+
+  // Si solo se muestra el botón de volver, renderizar una versión simplificada
+  if (backButtonOnly) {
+    return (
+      <header className="flex items-center justify-between border-b border-border bg-card/50 px-4 py-3 backdrop-blur-xl md:px-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground hover:text-foreground"
+          asChild
+        >
+          <Link href={backHref} aria-label="Volver">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+        </Button>
+        
+        {!isLoading && isAuthenticated && (
+          <span className="text-sm text-muted-foreground">
+            Bienvenido, <span className="font-semibold text-foreground">{user_name || "Usuario"}</span>
+          </span>
+        )}
+      </header>
+    )
+  }
 
   const handleMobileLogout = () => {
     logout()

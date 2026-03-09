@@ -1,10 +1,10 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Bot, Send, User, ArrowLeft, Sparkles } from "lucide-react"
+import { Bot, Send, User, Sparkles } from "lucide-react"
+import { Navbar } from "@/components/navbar"
 import { useAuth } from "@/context/auth-context" // 1. Importamos tu nuevo hook global
 
 interface Message {
@@ -131,35 +131,8 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-dvh flex-col bg-background">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-border bg-card/50 px-4 py-3 backdrop-blur-xl md:px-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" asChild>
-            <Link href="/" aria-label="Volver al inicio">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          <div className="h-6 w-px bg-border" />
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
-                <Bot className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-emerald-500" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">NexaBot</p>
-              <p className="text-xs text-primary">En linea</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 sm:flex">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs text-muted-foreground">IA Avanzada</span>
-          </div>
-        </div>
-      </header>
+      {/* Navbar with back button only */}
+      <Navbar backButtonOnly={true} backHref="/" />
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
