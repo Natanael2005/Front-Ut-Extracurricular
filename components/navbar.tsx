@@ -24,7 +24,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/100 bg-background/80 backdrop-blur-xl">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/100 bg-card">
       <div className="flex h-16 w-full items-center px-5">
 
         {/* Grupo izquierdo: logo + navegación */}
@@ -88,14 +88,6 @@ export function Navbar() {
                 asChild
               >
                 <a href="/auth/login">Iniciar sesion</a>
-              </Button>
-
-              <Button
-                size="sm"
-                className="px-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                asChild
-              >
-                <a href="/auth/register">Registrarse</a>
               </Button>
             </>
           )}
