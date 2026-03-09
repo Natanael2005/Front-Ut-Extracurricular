@@ -3,21 +3,44 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { motion, Variants } from "framer-motion"
+
+// Importamos tus componentes y el layout maestro
 import { AuthLayout } from "@/components/auth-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, LogIn, Shield, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Shield, Loader2, Mail, Lock } from "lucide-react"
 
-// 1. Renombramos la importación de la API a 'apiLogin' para no confundirla con la del contexto
 import { login as apiLogin, type ApiError } from "@/lib/auth-api" 
-// 2. Importamos tu nuevo hook global
 import { useAuth } from "@/context/auth-context" 
+
+// 1. Variantes de animación para el efecto cascada (sin errores de tipos)
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.3 // Espera a que la tarjeta del AuthLayout se asiente
+    }
+  }
+}
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { 
+      duration: 0.5, 
+      ease: [0.22, 1, 0.36, 1] // Curva suave tipo seda
+    }
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter()
-  
-  // 3. Extraemos la función login de nuestro estado global
   const { login } = useAuth() 
 
   const [email, setEmail] = useState("")
@@ -34,28 +57,22 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // 4. Usamos apiLogin para hacer la petición al servidor
       const data = await apiLogin({
         email,
         password,
         ...(showMfa && mfaCode ? { mfa_code: mfaCode } : {}),
       })
-
-      // 5. ¡LA MAGIA AQUÍ! 
-      // Le pasamos los datos a tu contexto. Él se encarga de guardarlo en localStorage 
-      // y de avisarle instantáneamente al Navbar que ya iniciaste sesión.
       login(data.access_token, data.user_name)
-
       router.push("/chat")
     } catch (err) {
       const apiError = err as ApiError
       if (apiError.status === 401 && !showMfa) {
         setShowMfa(true)
-        setError("Se requiere el codigo de autenticacion MFA.")
+        setError("Se requiere el código de autenticación MFA.")
       } else if (apiError.status === 403) {
         setError("Cuenta bloqueada temporalmente. Intenta de nuevo en 1 minuto.")
       } else {
-        setError(apiError.message || "Error al iniciar sesion.")
+        setError(apiError.message || "Error al iniciar sesión.")
       }
     } finally {
       setIsLoading(false)
@@ -64,111 +81,127 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
-      title="Iniciar sesion"
+      title="Bienvenido de vuelta"
       description="Ingresa tus credenciales para acceder a tu cuenta."
+      view="login"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        {/* Error message */}
+      <motion.form 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        onSubmit={handleSubmit} 
+        className="flex flex-col gap-5"
+      >
+        
+        {/* Mensaje de Error Animado */}
         {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <motion.div 
+            variants={itemVariants}
+            className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          >
             {error}
-          </div>
+          </motion.div>
         )}
 
-        {/* Email */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="email" className="text-foreground">
-            Correo electronico
-          </Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="tu.matricula@utcancun.edu.mx"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground"
-          />
-        </div>
-
-        {/* Password */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="password" className="text-foreground">
-            Contraseña
+        {/* Input de Correo */}
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 relative">
+          <Label htmlFor="email" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">
+            Correo electrónico
           </Label>
           <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="email"
+              type="email"
+              placeholder="tu.matricula@utcancun.edu.mx"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl focus:ring-primary/20"
+            />
+          </div>
+        </motion.div>
+
+        {/* Input de Contraseña */}
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 relative">
+          <div className="flex justify-between items-end">
+            <Label htmlFor="password" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">
+              Contraseña
+            </Label>
+            <Link
+              href="/auth/forgot-password"
+              className="text-[10px] text-primary hover:text-primary/80 transition-colors font-medium uppercase tracking-wider"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Ingresa tu contraseña"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground pr-10"
+              className="pl-9 pr-10 bg-secondary/30 border-border text-foreground rounded-xl"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          <Link
-            href="/auth/forgot-password"
-            className="text-xs text-primary hover:text-primary/80 transition-colors self-end"
-          >
-            Olvidaste tu contraseña?
-          </Link>
-        </div>
+        </motion.div>
 
-        {/* MFA Code - visible only when API returns 401 */}
+        {/* Bloque MFA con animación de altura */}
         {showMfa && (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="mfa_code" className="text-foreground flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary" />
-              Codigo MFA
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="flex flex-col gap-1.5 p-4 rounded-xl border border-primary/20 bg-primary/5"
+          >
+            <Label htmlFor="mfa_code" className="text-foreground text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5">
+              <Shield className="h-3.5 w-3.5 text-primary" />
+              Código MFA
             </Label>
             <Input
               id="mfa_code"
               type="text"
-              inputMode="numeric"
               maxLength={6}
-              placeholder="Ingresa el codigo de 6 digitos"
+              placeholder="000000"
               value={mfaCode}
               onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
               required
-              className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground tracking-widest text-center text-lg font-mono"
+              className="bg-background/50 border-primary/30 text-center tracking-[0.5em] text-lg font-mono rounded-xl h-12"
             />
-            <p className="text-xs text-muted-foreground">
-              Ingresa el codigo de tu aplicacion de autenticacion (Google Authenticator).
-            </p>
-          </div>
+          </motion.div>
         )}
 
-        {/* Submit */}
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="mt-1 bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <LogIn className="h-4 w-4" />
-          )}
-          {isLoading ? "Iniciando sesion..." : "Iniciar sesion"}
-        </Button>
+        {/* Botón de Submit con Micro-interacciones */}
+        <motion.div variants={itemVariants} className="mt-2">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="relative w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium shadow-lg shadow-primary/20 overflow-hidden"
+          >
+            <motion.div
+              className="flex items-center justify-center w-full h-full"
+              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.01 }}
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Iniciar sesión"
+              )}
+            </motion.div>
+          </Button>
+        </motion.div>
 
-        {/* Register link */}
-        <p className="text-center text-sm text-muted-foreground">
-          No tienes cuenta?{" "}
-          <Link href="/auth/register" className="text-primary hover:text-primary/80 font-medium transition-colors">
-            Registrate aqui
-          </Link>
-        </p>
-      </form>
+      </motion.form>
     </AuthLayout>
   )
 }

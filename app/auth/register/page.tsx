@@ -1,9 +1,11 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { AuthLayout } from "@/components/auth-layout"
+import { motion, Variants } from "framer-motion"
+
+// Importamos el layout maestro y componentes UI
+import { AuthLayout } from "@/components/auth-layout" 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,19 +16,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Eye, EyeOff, UserPlus, Loader2, Check, X } from "lucide-react"
-// Importamos getCareers y el tipo Career
-import { register, getCareers, type Career, type ApiError } from "@/lib/auth-api" 
+import { 
+  Eye, 
+  EyeOff, 
+  Loader2, 
+  Check, 
+  X, 
+  User, 
+  Mail, 
+  Hash, 
+  BookOpen, 
+  Clock,
+  Lock
+} from "lucide-react"
+
+import { register, getCareers, type Career, type ApiError } from "@/lib/auth-api"
+
+// --- CONFIGURACIÓN DE ANIMACIONES (Sin errores de tipos) ---
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05, // Entrada rápida por ser muchos campos
+      delayChildren: 0.2
+    }
+  }
+}
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { 
+      duration: 0.4, 
+      ease: [0.22, 1, 0.36, 1] // Curva de seda optimizada
+    }
+  }
+}
 
 const HOBBIES_OPTIONS = [
-  "Programar",
-  "Leer",
-  "Deportes",
-  "Musica",
-  "Gaming",
-  "Dibujo",
-  "Cocina",
-  "Fotografia",
+  "Programar", "Leer", "Deportes", "Musica", 
+  "Gaming", "Dibujo", "Cocina", "Fotografia",
 ]
 
 const HORARIOS = ["Matutino", "Vespertino", "Mixto"]
@@ -58,13 +90,11 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
-  // Nuevos estados para cargar las carreras dinámicamente
   const [careers, setCareers] = useState<Career[]>([])
   const [isLoadingCareers, setIsLoadingCareers] = useState(true)
 
   const { checks, passed } = getPasswordStrength(formData.password)
 
-  // useEffect para cargar las carreras desde el backend al iniciar la página
   useEffect(() => {
     async function loadCareers() {
       try {
@@ -94,14 +124,13 @@ export default function RegisterPage() {
     e.preventDefault()
     setError("")
 
-    // Validación extra: asegurarse de que eligieron una carrera
     if (!formData.career_id) {
       setError("Por favor, selecciona una carrera.")
       return
     }
 
     if (passed < 4) {
-      setError("La contrasena no cumple con los requisitos de seguridad.")
+      setError("La contraseña no cumple con los requisitos de seguridad.")
       return
     }
 
@@ -132,153 +161,174 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Crear cuenta"
-      description="Registrate como estudiante para acceder a todas las funcionalidades."
+      description="Regístrate como estudiante para acceder a todas las funcionalidades."
+      view="register"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <motion.form 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        onSubmit={handleSubmit} 
+        className="flex flex-col gap-4"
+      >
+        {/* Mensaje de error animado */}
         {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <motion.div variants={itemVariants} className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {error}
-          </div>
+          </motion.div>
         )}
 
-        {/* Name row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="first_name" className="text-foreground">
-              Nombre
-            </Label>
-            <Input
-              id="first_name"
-              placeholder="Diego Angel"
-              value={formData.first_name}
-              onChange={(e) => handleChange("first_name", e.target.value)}
-              required
-              className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground"
-            />
+        {/* Nombres y Apellidos */}
+        <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5 relative">
+            <Label htmlFor="first_name" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Nombre</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="first_name"
+                placeholder="Nombres"
+                value={formData.first_name}
+                onChange={(e) => handleChange("first_name", e.target.value)}
+                required
+                className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl"
+              />
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="last_name" className="text-foreground">
-              Apellidos
-            </Label>
-            <Input
-              id="last_name"
-              placeholder="Tus Nombres"
-              value={formData.last_name}
-              onChange={(e) => handleChange("last_name", e.target.value)}
-              required
-              className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground"
-            />
+          <div className="flex flex-col gap-1.5 relative">
+            <Label htmlFor="last_name" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Apellidos</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="last_name"
+                placeholder="Apellidos"
+                value={formData.last_name}
+                onChange={(e) => handleChange("last_name", e.target.value)}
+                required
+                className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl"
+              />
+            </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Email */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="email" className="text-foreground">
-            Correo institucional
-          </Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="23393190@utcancun.edu.mx"
-            value={formData.email}
-            onChange={(e) => handleChange("email", e.target.value)}
-            required
-            className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground"
-          />
-          <p className="text-xs text-muted-foreground">Debe ser un correo @utcancun.edu.mx</p>
-        </div>
-
-        {/* Matricula */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="matricula" className="text-foreground">
-            Matricula
-          </Label>
-          <Input
-            id="matricula"
-            placeholder="23393190"
-            value={formData.matricula}
-            onChange={(e) => handleChange("matricula", e.target.value)}
-            required
-            className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground"
-          />
-        </div>
-
-        {/* Career - Actualizado para usar los datos de la API */}
-        <div className="flex flex-col gap-2">
-          <Label className="text-foreground">Carrera</Label>
-          <Select 
-            value={formData.career_id} 
-            onValueChange={(v) => handleChange("career_id", v)}
-            disabled={isLoadingCareers}
-          >
-            <SelectTrigger className="bg-secondary/50 border-border text-foreground">
-              <SelectValue placeholder={isLoadingCareers ? "Cargando carreras..." : "Selecciona tu carrera"} />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              {careers.map((c) => (
-                <SelectItem key={c.career_id} value={String(c.career_id)} className="text-foreground">
-                  {c.career_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Password */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="reg_password" className="text-foreground">
-            Contraseña
-          </Label>
+        {/* Correo */}
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 relative">
+          <Label htmlFor="email" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Correo institucional</Label>
           <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="email"
+              type="email"
+              placeholder="matricula@utcancun.edu.mx"
+              value={formData.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+              required
+              className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl"
+            />
+          </div>
+        </motion.div>
+
+        {/* Matrícula y Horario */}
+        <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5 relative">
+            <Label htmlFor="matricula" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Matrícula</Label>
+            <div className="relative">
+              <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="matricula"
+                placeholder="ej. 23393190"
+                value={formData.matricula}
+                onChange={(e) => handleChange("matricula", e.target.value)}
+                required
+                className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5 relative">
+            <Label className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Horario</Label>
+            <div className="relative">
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+              <Select value={horario} onValueChange={setHorario}>
+                <SelectTrigger className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl">
+                  <SelectValue placeholder="Turno" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  {HORARIOS.map((h) => (
+                    <SelectItem key={h} value={h} className="text-foreground">{h}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Carrera */}
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 relative">
+          <Label className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Carrera</Label>
+          <div className="relative">
+            <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+            <Select
+              value={formData.career_id}
+              onValueChange={(v) => handleChange("career_id", v)}
+              disabled={isLoadingCareers}
+            >
+              <SelectTrigger className="pl-9 bg-secondary/30 border-border text-foreground rounded-xl">
+                <SelectValue placeholder={isLoadingCareers ? "Cargando..." : "Selecciona tu carrera"} />
+              </SelectTrigger>
+              <SelectContent position="popper" avoidCollisions={false} className="bg-card border-border w-[var(--radix-select-trigger-width)] max-h-[300px]">
+                {careers.map((c) => (
+                  <SelectItem key={c.career_id} value={String(c.career_id)} className="text-foreground whitespace-normal py-2 pr-2">
+                    {c.career_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </motion.div>
+
+        {/* Contraseña */}
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 relative">
+          <Label htmlFor="reg_password" className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Contraseña</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="reg_password"
               type={showPassword ? "text" : "password"}
-              placeholder="Minimo 12 caracteres"
+              placeholder="Mínimo 12 caracteres"
               value={formData.password}
               onChange={(e) => handleChange("password", e.target.value)}
               required
-              className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground pr-10"
+              className="pl-9 pr-10 bg-secondary/30 border-border text-foreground rounded-xl"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          {/* Password strength */}
+          
           {formData.password && (
-            <div className="mt-1 flex flex-col gap-1.5">
-              <div className="flex gap-1">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 flex flex-col gap-2">
+              <div className="flex gap-1 h-1.5">
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
-                    className={`h-1 flex-1 rounded-full transition-colors ${
-                      i <= passed
-                        ? passed <= 2
-                          ? "bg-destructive"
-                          : passed === 3
-                            ? "bg-yellow-500"
-                            : "bg-primary"
-                        : "bg-muted"
-                    }`}
+                    className={`flex-1 rounded-full transition-colors ${i <= passed ? (passed <= 2 ? "bg-destructive" : passed === 3 ? "bg-yellow-500" : "bg-primary") : "bg-muted"}`}
                   />
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[10px]">
                 {[
-                  { key: "length", label: "Min. 12 caracteres" },
-                  { key: "uppercase", label: "Una mayuscula" },
-                  { key: "number", label: "Un numero" },
-                  { key: "special", label: "Un caracter especial (@$!%*?&)" },
+                  { key: "length", label: "Mín. 12 caracteres" },
+                  { key: "uppercase", label: "Una mayúscula" },
+                  { key: "number", label: "Un número" },
+                  { key: "special", label: "Un carácter especial" },
                 ].map((rule) => (
                   <span
                     key={rule.key}
-                    className={`flex items-center gap-1 ${
-                      checks[rule.key as keyof typeof checks] ? "text-primary" : "text-muted-foreground"
-                    }`}
+                    className={`flex items-center gap-1 ${checks[rule.key as keyof typeof checks] ? "text-primary font-medium" : "text-muted-foreground"}`}
                   >
                     {checks[rule.key as keyof typeof checks] ? (
                       <Check className="h-3 w-3" />
@@ -289,72 +339,46 @@ export default function RegisterPage() {
                   </span>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </motion.div>
 
         {/* Hobbies */}
-        <div className="flex flex-col gap-2">
-          <Label className="text-foreground">Hobbies</Label>
-          <div className="flex flex-wrap gap-2">
+        <motion.div variants={itemVariants} className="flex flex-col gap-1.5 mt-1">
+          <Label className="text-foreground text-[10px] font-semibold uppercase tracking-wider">Intereses / Hobbies</Label>
+          <div className="flex flex-wrap gap-1.5">
             {HOBBIES_OPTIONS.map((hobby) => {
               const selected = selectedHobbies.includes(hobby)
               return (
-                <button
+                <motion.button
                   key={hobby}
+                  whileTap={{ scale: 0.95 }}
                   type="button"
                   onClick={() => toggleHobby(hobby)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
-                    selected
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-secondary/50 text-muted-foreground hover:border-primary/40"
-                  }`}
+                  className={`rounded-full border px-2.5 py-1 text-[10px] font-medium transition-all ${selected
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40"
+                    }`}
                 >
                   {hobby}
-                </button>
+                </motion.button>
               )
             })}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Horario */}
-        <div className="flex flex-col gap-2">
-          <Label className="text-foreground">Horario preferido</Label>
-          <Select value={horario} onValueChange={setHorario}>
-            <SelectTrigger className="bg-secondary/50 border-border text-foreground">
-              <SelectValue placeholder="Selecciona tu horario" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              {HORARIOS.map((h) => (
-                <SelectItem key={h} value={h} className="text-foreground">
-                  {h}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Submit */}
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="mt-1 bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <UserPlus className="h-4 w-4" />
-          )}
-          {isLoading ? "Registrando..." : "Crear cuenta"}
-        </Button>
-
-        <p className="text-center text-sm text-muted-foreground">
-          Ya tienes cuenta?{" "}
-          <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
-            Inicia sesion
-          </Link>
-        </p>
-      </form>
+        {/* Submit con micro-interacción */}
+        <motion.div variants={itemVariants}>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-full rounded-xl font-medium shadow-lg shadow-primary/20 active:scale-[0.98]"
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? "Registrando..." : "Crear cuenta"}
+          </Button>
+        </motion.div>
+      </motion.form>
     </AuthLayout>
   )
 }

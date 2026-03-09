@@ -4,7 +4,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import { AuthProvider } from "@/context/auth-context"
 import './globals.css'
 
-// 1. Configuramos las fuentes para exportar sus variables CSS
+// Configuramos las fuentes
 const inter = Inter({ 
   subsets: ['latin'],
   variable: '--font-sans' 
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0a0a0a',
+  themeColor: '#000000', // Actualizado a negro puro
 }
 
 export default function RootLayout({
@@ -30,11 +30,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    // 2. Inyectamos las variables de las fuentes en la etiqueta html
     <html lang="es" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+      {/* Cambiamos bg-background por bg-black para asegurar un fondo negro puro */}
       <body className="font-sans antialiased min-h-screen flex flex-col bg-background text-foreground">
         
-        {/* 3. Envolvemos nuestra aplicación con el estado global de autenticación */}
+        {/* Envolvemos nuestra aplicación con el estado global de autenticación */}
         <AuthProvider>
           {children}
         </AuthProvider>

@@ -4,6 +4,7 @@
 // =============================================================
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+const REQUEST_TIMEOUT_MS = 120_000 // 120 segundos
 
 // ---------- Types ----------
 
@@ -13,8 +14,6 @@ export interface LoginRequest {
   mfa_code?: string
 }
 
-
-// NUEVO: Interfaz para la respuesta del Login
 export interface LoginResponse {
   access_token: string
   token_type: string
@@ -73,91 +72,121 @@ export interface ApiError {
   detail?: ApiValidationError["detail"]
 }
 
-// ---------- Helper ----------
+export interface RequestConfig extends RequestInit {
+  timeoutMs?: number
+}
 
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null)
-    const apiError: ApiError = {
-      status: response.status,
-      message:
-        response.status === 400
+function createApiError(status: number, detail?: ApiValidationError["detail"]): ApiError {
+  return {
+    status,
+    message:
+      status === 0
+        ? "No fue posible conectar con el servidor. Verifica tu conexion e intenta nuevamente."
+        : status === 400
           ? "Peticion incorrecta o regla de negocio no cumplida."
-          : response.status === 401
+          : status === 401
             ? "Credenciales incorrectas, codigo MFA invalido o codigo MFA faltante."
-            : response.status === 403
+            : status === 403
               ? "Cuenta bloqueada temporalmente por demasiados intentos (Fuerza Bruta)."
-              : response.status === 404
+              : status === 404
                 ? "Recurso o usuario no encontrado."
-                : response.status === 422
+                : status === 422
                   ? "Error de validacion."
                   : "Error interno del servidor.",
-      detail: errorData?.detail,
-    }
-    throw apiError
+    detail,
   }
-  return response.json() as Promise<T>
+}
+
+// ---------- Helper ----------
+
+export async function request<T>(endpoint: string, config: RequestConfig): Promise<T> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), config.timeoutMs ?? REQUEST_TIMEOUT_MS)
+
+  try {
+    const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`
+
+    const response = await fetch(url, {
+      ...config,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...config.headers,
+      },
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw createApiError(response.status, errorData?.detail)
+    }
+
+    return response.json() as Promise<T>
+  } catch (error) {
+    if ((error as DOMException).name === "AbortError") {
+      throw {
+        status: 0,
+        message: "La solicitud tardo demasiado tiempo. Intenta nuevamente.",
+      } as ApiError
+    }
+
+    if ((error as TypeError).name === "TypeError") {
+      throw createApiError(0)
+    }
+
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 // ---------- Endpoints ----------
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+  return request<LoginResponse>("/auth/login", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   })
-  return handleResponse<LoginResponse>(response)
 }
 
 export async function register(data: RegisterRequest): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, {
+  return request<string>("/auth/register", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   })
-  return handleResponse<string>(response)
 }
 
 export async function forgotPassword(data: ForgotPasswordRequest): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+  return request<string>("/auth/forgot-password", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   })
-  return handleResponse<string>(response)
 }
 
 export async function resetPassword(data: ResetPasswordRequest): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+  return request<string>("/auth/reset-password", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   })
-  return handleResponse<string>(response)
 }
 
 export async function mfaSetup(userId: string): Promise<string> {
   const params = new URLSearchParams({ user_id: userId })
-  const response = await fetch(`${API_BASE_URL}/auth/mfa/setup?${params}`, {
+  return request<string>(`/auth/mfa/setup?${params}`, {
     method: "POST",
+    headers: {},
   })
-  return handleResponse<string>(response)
 }
 
 export async function mfaVerify(userId: string, code: string): Promise<string> {
   const params = new URLSearchParams({ user_id: userId, code })
-  const response = await fetch(`${API_BASE_URL}/auth/mfa/verify?${params}`, {
+  return request<string>(`/auth/mfa/verify?${params}`, {
     method: "POST",
+    headers: {},
   })
-  return handleResponse<string>(response)
 }
 
-
 export async function getCareers(): Promise<Career[]> {
-  const response = await fetch(`${API_BASE_URL}/auth/careers`, {
+  return request<Career[]>("/auth/careers", {
     method: "GET",
-    headers: { "Content-Type": "application/json" },
   })
-  return handleResponse<Career[]>(response)
 }
