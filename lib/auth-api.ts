@@ -4,7 +4,7 @@
 // =============================================================
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-const REQUEST_TIMEOUT_MS = 10_000
+const REQUEST_TIMEOUT_MS = 120_000 // 120 segundos
 
 // ---------- Types ----------
 
@@ -72,7 +72,7 @@ export interface ApiError {
   detail?: ApiValidationError["detail"]
 }
 
-interface RequestConfig extends RequestInit {
+export interface RequestConfig extends RequestInit {
   timeoutMs?: number
 }
 
@@ -99,12 +99,14 @@ function createApiError(status: number, detail?: ApiValidationError["detail"]): 
 
 // ---------- Helper ----------
 
-async function request<T>(endpoint: string, config: RequestConfig): Promise<T> {
+export async function request<T>(endpoint: string, config: RequestConfig): Promise<T> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs ?? REQUEST_TIMEOUT_MS)
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`
+
+    const response = await fetch(url, {
       ...config,
       signal: controller.signal,
       headers: {

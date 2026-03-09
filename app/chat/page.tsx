@@ -5,7 +5,10 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Bot, Send, User, ArrowLeft, Sparkles } from "lucide-react"
-import { useAuth } from "@/context/auth-context" // 1. Importamos tu nuevo hook global
+import { useAuth } from "@/context/auth-context"
+import { askChatbot } from "@/lib/chat-api"
+// 1. Importamos el renderizador de Markdown
+import ReactMarkdown from "react-markdown"
 
 interface Message {
   id: number
@@ -17,33 +20,20 @@ const initialMessages: Message[] = [
   {
     id: 1,
     role: "bot",
-    text: "Hola! Soy NexaBot, tu asistente virtual. Puedes preguntarme lo que necesites y estare encantado de ayudarte.",
+    text: "¡Hola! Soy NexaBot, tu asistente virtual. Puedes preguntarme sobre los talleres extracurriculares o cualquier duda que tengas.",
   },
 ]
 
-const botResponses = [
-  "Excelente pregunta! Nuestro chatbot se integra facilmente con cualquier plataforma. Solo necesitas un snippet de codigo para empezar.",
-  "Puedo ayudarte con informacion sobre caracteristicas, integraciones o soporte tecnico. Que necesitas saber?",
-  "Contamos con integraciones nativas con Slack, WhatsApp, Telegram y muchas plataformas mas. La configuracion es muy sencilla.",
-  "Nuestro motor de IA procesa mas de 50 idiomas con deteccion automatica. Tus usuarios pueden escribir en su idioma preferido.",
-  "La seguridad es nuestra prioridad. Contamos con cifrado de extremo a extremo y cumplimiento con GDPR y SOC2.",
-  "El tiempo promedio de respuesta es inferior a 1 segundo, lo que garantiza una experiencia fluida para tus usuarios.",
-  "Puedes personalizar completamente la apariencia del chatbot: colores, tipografia, avatar y tono de voz.",
-  "Nuestro panel de analitica te muestra metricas en tiempo real: satisfaccion, volumen de consultas y temas frecuentes.",
-]
-
 const suggestedPrompts = [
-  "Como integro NexaBot en mi sitio web?",
-  "Que idiomas soporta el chatbot?",
-  "Como funciona la analitica?",
-  "Cuales integraciones tienen disponibles?",
+  "¿Quién da el taller de ajedrez?",
+  "¿Qué horarios tiene el taller de música?",
+  "¿Dónde se imparte el taller de robótica?",
+  "¿Qué talleres hay disponibles los lunes?",
 ]
 
 export default function ChatPage() {
   const router = useRouter()
-  
-  // 2. Extraemos el estado de carga y autorización desde el contexto global
-  const { isAuthenticated, isLoading } = useAuth() 
+  const { isAuthenticated, isLoading, logout } = useAuth() 
 
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [inputValue, setInputValue] = useState("")
@@ -51,9 +41,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // 3. El nuevo "Guardia" conectado al estado global
   useEffect(() => {
-    // Si ya terminó de verificar (no está cargando) y resulta que NO está autenticado, lo expulsamos.
     if (!isLoading && !isAuthenticated) {
       router.replace("/auth/login")
     }
@@ -68,13 +56,12 @@ export default function ChatPage() {
   }, [messages, isTyping])
 
   useEffect(() => {
-    // 4. Solo hacemos autofocus si ya cargó y sabemos que está autorizado
     if (!isLoading && isAuthenticated) {
       inputRef.current?.focus()
     }
   }, [isLoading, isAuthenticated])
 
-  const handleSend = (text?: string) => {
+  const handleSend = async (text?: string) => {
     const messageText = text || inputValue.trim()
     if (!messageText) return
 
@@ -86,22 +73,43 @@ export default function ChatPage() {
 
     setMessages((prev) => [...prev, userMessage])
     setInputValue("")
-    setIsTyping(true)
+    setIsTyping(true) 
 
     if (inputRef.current) {
       inputRef.current.style.height = "auto"
     }
 
-    setTimeout(() => {
-      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)]
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) throw new Error("No hay sesión activa")
+
+      const data = await askChatbot(messageText, token)
+
+      // 2. Limpiamos los saltos de línea literales de la API
+      const textoFormateado = data.respuesta.replace(/\\n/g, '\n')
+
       const botMessage: Message = {
         id: Date.now() + 1,
         role: "bot",
-        text: randomResponse,
+        text: textoFormateado, 
       }
       setMessages((prev) => [...prev, botMessage])
-      setIsTyping(false)
-    }, 1000 + Math.random() * 800)
+
+    } catch (error: any) {
+      if (error?.status === 401) {
+        logout()
+        return
+      }
+      
+      const errorMessage: Message = {
+        id: Date.now() + 1,
+        role: "bot",
+        text: "Lo siento, tuve un problema al procesar tu solicitud. Por favor, intenta de nuevo más tarde.",
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setIsTyping(false) 
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -119,8 +127,6 @@ export default function ChatPage() {
 
   const showSuggestions = messages.length <= 1 && !isTyping
 
-  // 5. Pantalla de carga inteligente: 
-  // Se muestra si el contexto está cargando, o si no está autenticado (para evitar que la interfaz parpadee antes de ser expulsado).
   if (isLoading || !isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
@@ -164,15 +170,14 @@ export default function ChatPage() {
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-4 py-6 md:px-6">
-          {/* Welcome state with suggestions */}
           {showSuggestions && (
             <div className="mb-8 mt-8 flex flex-col items-center text-center md:mt-16">
               <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
                 <Bot className="h-8 w-8 text-primary" />
               </div>
-              <h1 className="text-2xl font-bold text-foreground">Como puedo ayudarte?</h1>
+              <h1 className="text-2xl font-bold text-foreground">¿Cómo puedo ayudarte?</h1>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                Escribe tu pregunta o selecciona una de las sugerencias para comenzar la conversacion.
+                Escribe tu pregunta o selecciona una de las sugerencias para conocer más sobre los talleres.
               </p>
               <div className="mt-8 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
                 {suggestedPrompts.map((prompt) => (
@@ -189,7 +194,6 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Messages */}
           <div className="flex flex-col gap-6">
             {messages.map((msg) => (
               <div
@@ -208,13 +212,29 @@ export default function ChatPage() {
                   )}
                 </div>
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
                     msg.role === "bot"
                       ? "rounded-tl-md bg-card border border-border text-foreground"
                       : "rounded-tr-md bg-primary text-primary-foreground"
                   }`}
                 >
-                  {msg.text}
+                  {/* 3. AQUI RENDERIZAMOS EL MARKDOWN INTELIGENTE */}
+                  {msg.role === "bot" ? (
+                    <ReactMarkdown
+                      components={{
+                        // Le decimos a Tailwind cómo pintar los estilos de Markdown
+                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                        ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,
+                        ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2 space-y-1" {...props} />,
+                        li: ({ node, ...props }) => <li className="" {...props} />,
+                        strong: ({ node, ...props }) => <strong className="font-bold text-foreground" {...props} />,
+                      }}
+                    >
+                      {msg.text}
+                    </ReactMarkdown>
+                  ) : (
+                    msg.text
+                  )}
                 </div>
               </div>
             ))}
@@ -233,7 +253,6 @@ export default function ChatPage() {
                 </div>
               </div>
             )}
-
             <div ref={messagesEndRef} />
           </div>
         </div>
@@ -255,7 +274,7 @@ export default function ChatPage() {
             <Button
               size="icon"
               onClick={() => handleSend()}
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || isTyping}
               className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30"
             >
               <Send className="h-4 w-4" />
