@@ -4,8 +4,6 @@ import React from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft, Sparkles, Bot } from "lucide-react"
-// Asegúrate de que esta ruta sea la correcta en tu proyecto
-import { NoiseBackground } from "@/components/ui/noisebackground"
 
 interface AuthLayoutProps {
   children: React.ReactNode
@@ -16,10 +14,8 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children, title, description, view }: AuthLayoutProps) {
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-8 overflow-hidden bg-[#010b1a]">
+    <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-8 overflow-hidden bg backg">
       
-      {/* 1. FONDO ANIMADO TOTAL: Ocupa toda la pantalla detrás de la tarjeta */}
-      <NoiseBackground />
 
       {/* 2. TARJETA PRINCIPAL: Con animación de entrada y efecto de cristal */}
       <motion.div 
