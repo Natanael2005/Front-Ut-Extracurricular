@@ -12,38 +12,9 @@ const navLinks = [
   { label: "Como funciona", href: "#como-funciona" },
 ]
 
-interface NavbarProps {
-  backButtonOnly?: boolean
-  backHref?: string
-}
-
-export function Navbar({ backButtonOnly = false, backHref = "/" }: NavbarProps) {
+export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { user_name, isAuthenticated, isLoading, logout } = useAuth()
-
-  // Si solo se muestra el botón de volver, renderizar una versión simplificada
-  if (backButtonOnly) {
-    return (
-      <header className="flex items-center justify-between border-b border-border bg-card/50 px-4 py-3 backdrop-blur-xl md:px-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:text-foreground"
-          asChild
-        >
-          <Link href={backHref} aria-label="Volver">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
-        
-        {!isLoading && isAuthenticated && (
-          <span className="text-sm text-muted-foreground">
-            Bienvenido, <span className="font-semibold text-foreground">{user_name || "Usuario"}</span>
-          </span>
-        )}
-      </header>
-    )
-  }
 
   const handleMobileLogout = () => {
     logout()

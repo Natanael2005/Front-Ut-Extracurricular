@@ -65,7 +65,7 @@ export function NoiseBackground() {
     noise.seed(zCoord)
 
     const render = () => {
-      ctx.fillStyle = "#020704"
+      ctx.fillStyle = "#020704" // Negro con tinte verde
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       for(let x = 0; x < canvas.width; x += pos) {
@@ -73,7 +73,7 @@ export function NoiseBackground() {
           const value = noise.perlin3(x * scale, y * scale, zCoord)
           const opacity = Math.abs(value) * 0.12
           
-          ctx.fillStyle = `rgba(0, 151, 128, ${opacity})`
+          ctx.fillStyle = `rgba(34, 197, 94, ${opacity})` // Verde suave
           ctx.fillRect(x, y, pos + 1, pos + 1)
         }
       }
