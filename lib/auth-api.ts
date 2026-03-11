@@ -24,10 +24,10 @@ export interface LoginRequest {
   mfa_code?: string
 }
 
-// 2. ACTUALIZAMOS EL RESPONSE: El backend ya no manda el token aquí
 export interface LoginResponse {
   message: string
-  user_name: string
+  user_name?: string
+  mfa_required?: boolean
 }
 
 export interface Career {
@@ -75,6 +75,7 @@ export interface ApiError {
 
 // ---------- Centralización de Errores ----------
 
+// 2. ACTUALIZAMOS EL MAPEO DE ERRORES
 function handleAxiosError(error: unknown): never {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status || 0
@@ -84,23 +85,24 @@ function handleAxiosError(error: unknown): never {
       status,
       message:
         status === 0
-          ? "No fue posible conectar con el servidor. Verifica tu conexion e intenta nuevamente."
+          ? "No fue posible conectar con el servidor. Verifica tu conexión e intenta nuevamente."
           : status === 400
-            ? "Peticion incorrecta o regla de negocio no cumplida."
+            ? "Petición incorrecta o regla de negocio no cumplida."
             : status === 401
-              ? "Credenciales incorrectas, código MFA inválido o sesión expirada."
+              ? "Credenciales incorrectas o código MFA inválido."
               : status === 403
                 ? "Cuenta bloqueada temporalmente por demasiados intentos."
                 : status === 404
                   ? "Recurso o usuario no encontrado."
                   : status === 422
                     ? "Error de validación de datos."
-                    : "Error interno del servidor.",
+                    : status === 500
+                      ? "Error interno del servidor."
+                      : "Error desconocido del servidor.",
       detail,
     } as ApiError
   }
   
-  // Si no es un error de Axios (ej. un error de sintaxis en el código), lo lanzamos crudo
   throw error
 }
 
