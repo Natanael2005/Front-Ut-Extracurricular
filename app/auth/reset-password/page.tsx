@@ -1,54 +1,45 @@
 "use client"
 
-import React, { useState, Suspense } from "react"
+import React, { Suspense } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
 import { AuthLayout } from "@/components/auth-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, KeyRound, Loader2, Check, X, CheckCircle2, AlertTriangle } from "lucide-react"
-import { resetPassword, type ApiError } from "@/lib/auth-api"
 
-function getPasswordStrength(password: string) {
-  const checks = {
-    length: password.length >= 12,
-    uppercase: /[A-Z]/.test(password),
-    number: /\d/.test(password),
-    special: /[@$!%*?&]/.test(password),
-  }
-  const passed = Object.values(checks).filter(Boolean).length
-  return { checks, passed }
-}
+// Importamos nuestro nuevo super-hook
+import { useResetPassword } from "@/hooks/use-reset-password"
 
 function ResetPasswordForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const token = searchParams.get("token")
+  // 1. Inyectamos toda la lógica con una sola línea
+  const {
+    token,
+    newPassword, setNewPassword,
+    confirmPassword, setConfirmPassword,
+    showPassword, setShowPassword,
+    showConfirm, setShowConfirm,
+    isLoading,
+    error,
+    success,
+    checks,
+    passed,
+    handleSubmit
+  } = useResetPassword()
 
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
-
-  const { checks, passed } = getPasswordStrength(newPassword)
-
-  // Token no presente en la URL
+  // Vista 1: Token no presente en la URL
   if (!token) {
     return (
       <AuthLayout
-        title="Enlace invalido"
-        description="El enlace de recuperacion no es valido o ha expirado."
+        title="Enlace inválido"
+        description="El enlace de recuperación no es válido o ha expirado."
       >
         <div className="flex flex-col items-center gap-6 py-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10">
             <AlertTriangle className="h-8 w-8 text-destructive" />
           </div>
           <p className="text-center text-sm text-muted-foreground">
-            El token de recuperacion no fue encontrado. Solicita un nuevo enlace de recuperacion.
+            El token de recuperación no fue encontrado. Solicita un nuevo enlace de recuperación.
           </p>
           <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" asChild>
             <Link href="/auth/forgot-password">Solicitar nuevo enlace</Link>
@@ -58,62 +49,33 @@ function ResetPasswordForm() {
     )
   }
 
+  // Vista 2: Éxito
   if (success) {
     return (
       <AuthLayout
-        title="Contrasena actualizada"
-        description="Tu contrasena ha sido restablecida exitosamente."
+        title="Contraseña actualizada"
+        description="Tu contraseña ha sido restablecida exitosamente."
       >
         <div className="flex flex-col items-center gap-6 py-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
             <CheckCircle2 className="h-8 w-8 text-primary" />
           </div>
           <p className="text-center text-sm text-muted-foreground">
-            Ahora puedes iniciar sesion con tu nueva contrasena.
+            Ahora puedes iniciar sesión con tu nueva contraseña.
           </p>
           <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" asChild>
-            <Link href="/auth/login">Ir a iniciar sesion</Link>
+            <Link href="/auth/login">Ir a iniciar sesión</Link>
           </Button>
         </div>
       </AuthLayout>
     )
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-
-    if (passed < 4) {
-      setError("La contrasena no cumple con los requisitos de seguridad.")
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError("Las contrasenas no coinciden.")
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      await resetPassword({ new_password: newPassword, token })
-      setSuccess(true)
-    } catch (err) {
-      const apiError = err as ApiError
-      if (apiError.status === 400) {
-        setError("El token ha expirado o ya fue utilizado. Solicita uno nuevo.")
-      } else {
-        setError(apiError.message || "Error al restablecer la contrasena.")
-      }
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
+  // Vista 3: Formulario Principal
   return (
     <AuthLayout
-      title="Nueva contrasena"
-      description="Establece tu nueva contrasena. Recuerda que el enlace expira en 15 minutos."
+      title="Nueva contraseña"
+      description="Establece tu nueva contraseña. Recuerda que el enlace expira en 15 minutos."
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {error && (
@@ -122,16 +84,16 @@ function ResetPasswordForm() {
           </div>
         )}
 
-        {/* New password */}
+        {/* Nueva contraseña */}
         <div className="flex flex-col gap-2">
           <Label htmlFor="new_password" className="text-foreground">
-            Nueva contrasena
+            Nueva contraseña
           </Label>
           <div className="relative">
             <Input
               id="new_password"
               type={showPassword ? "text" : "password"}
-              placeholder="Minimo 12 caracteres"
+              placeholder="Mínimo 12 caracteres"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
@@ -146,7 +108,8 @@ function ResetPasswordForm() {
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          {/* Password strength */}
+          
+          {/* Indicador de fuerza de contraseña */}
           {newPassword && (
             <div className="mt-1 flex flex-col gap-1.5">
               <div className="flex gap-1">
@@ -168,9 +131,9 @@ function ResetPasswordForm() {
               <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
                 {[
                   { key: "length", label: "Min. 12 caracteres" },
-                  { key: "uppercase", label: "Una mayuscula" },
-                  { key: "number", label: "Un numero" },
-                  { key: "special", label: "Caracter especial (@$!%*?&)" },
+                  { key: "uppercase", label: "Una mayúscula" },
+                  { key: "number", label: "Un número" },
+                  { key: "special", label: "Carácter especial (@$!%*?&)" },
                 ].map((rule) => (
                   <span
                     key={rule.key}
@@ -191,16 +154,16 @@ function ResetPasswordForm() {
           )}
         </div>
 
-        {/* Confirm password */}
+        {/* Confirmar contraseña */}
         <div className="flex flex-col gap-2">
           <Label htmlFor="confirm_password" className="text-foreground">
-            Confirmar contrasena
+            Confirmar contraseña
           </Label>
           <div className="relative">
             <Input
               id="confirm_password"
               type={showConfirm ? "text" : "password"}
-              placeholder="Repite la contrasena"
+              placeholder="Repite la contraseña"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -218,13 +181,13 @@ function ResetPasswordForm() {
           {confirmPassword && newPassword !== confirmPassword && (
             <p className="text-xs text-destructive flex items-center gap-1">
               <X className="h-3 w-3" />
-              Las contrasenas no coinciden
+              Las contraseñas no coinciden
             </p>
           )}
           {confirmPassword && newPassword === confirmPassword && confirmPassword.length > 0 && (
             <p className="text-xs text-primary flex items-center gap-1">
               <Check className="h-3 w-3" />
-              Las contrasenas coinciden
+              Las contraseñas coinciden
             </p>
           )}
         </div>
@@ -239,7 +202,7 @@ function ResetPasswordForm() {
           ) : (
             <KeyRound className="h-4 w-4" />
           )}
-          {isLoading ? "Restableciendo..." : "Restablecer contrasena"}
+          {isLoading ? "Restableciendo..." : "Restablecer contraseña"}
         </Button>
       </form>
     </AuthLayout>
@@ -250,7 +213,7 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <AuthLayout title="Cargando..." description="Validando enlace de recuperacion.">
+        <AuthLayout title="Cargando..." description="Validando enlace de recuperación.">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>

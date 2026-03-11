@@ -1,10 +1,20 @@
+import axios, { AxiosError } from "axios"
+
 // =============================================================
-// Auth API Service — preparado para conectarse a la API externa
-// Reemplaza API_BASE_URL con la URL real de tu backend
+// Auth API Service con AXIOS y Cookies (HttpOnly)
 // =============================================================
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-const REQUEST_TIMEOUT_MS = 120_000 // 120 segundos
+
+// 1. CREAMOS LA INSTANCIA DE AXIOS (El nuevo motor de peticiones)
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 120_000, // 2 minutos de espera máxima
+  withCredentials: true, // ¡LA MAGIA! Esto obliga al navegador a enviar y recibir cookies seguras
+  headers: {
+    "Content-Type": "application/json",
+  },
+})
 
 // ---------- Types ----------
 
@@ -14,9 +24,9 @@ export interface LoginRequest {
   mfa_code?: string
 }
 
+// 2. ACTUALIZAMOS EL RESPONSE: El backend ya no manda el token aquí
 export interface LoginResponse {
-  access_token: string
-  token_type: string
+  message: string
   user_name: string
 }
 
@@ -47,15 +57,6 @@ export interface ResetPasswordRequest {
   token: string
 }
 
-export interface MfaSetupRequest {
-  user_id: string
-}
-
-export interface MfaVerifyRequest {
-  user_id: string
-  code: string
-}
-
 export interface ApiValidationError {
   detail: {
     loc: (string | number)[]
@@ -72,121 +73,106 @@ export interface ApiError {
   detail?: ApiValidationError["detail"]
 }
 
-export interface RequestConfig extends RequestInit {
-  timeoutMs?: number
-}
+// ---------- Centralización de Errores ----------
 
-function createApiError(status: number, detail?: ApiValidationError["detail"]): ApiError {
-  return {
-    status,
-    message:
-      status === 0
-        ? "No fue posible conectar con el servidor. Verifica tu conexion e intenta nuevamente."
-        : status === 400
-          ? "Peticion incorrecta o regla de negocio no cumplida."
-          : status === 401
-            ? "Credenciales incorrectas, codigo MFA invalido o codigo MFA faltante."
-            : status === 403
-              ? "Cuenta bloqueada temporalmente por demasiados intentos (Fuerza Bruta)."
-              : status === 404
-                ? "Recurso o usuario no encontrado."
-                : status === 422
-                  ? "Error de validacion."
-                  : "Error interno del servidor.",
-    detail,
+function handleAxiosError(error: unknown): never {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status || 0
+    const detail = error.response?.data?.detail
+
+    throw {
+      status,
+      message:
+        status === 0
+          ? "No fue posible conectar con el servidor. Verifica tu conexion e intenta nuevamente."
+          : status === 400
+            ? "Peticion incorrecta o regla de negocio no cumplida."
+            : status === 401
+              ? "Credenciales incorrectas, código MFA inválido o sesión expirada."
+              : status === 403
+                ? "Cuenta bloqueada temporalmente por demasiados intentos."
+                : status === 404
+                  ? "Recurso o usuario no encontrado."
+                  : status === 422
+                    ? "Error de validación de datos."
+                    : "Error interno del servidor.",
+      detail,
+    } as ApiError
   }
-}
-
-// ---------- Helper ----------
-
-export async function request<T>(endpoint: string, config: RequestConfig): Promise<T> {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), config.timeoutMs ?? REQUEST_TIMEOUT_MS)
-
-  try {
-    const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`
-
-    const response = await fetch(url, {
-      ...config,
-      signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        ...config.headers,
-      },
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw createApiError(response.status, errorData?.detail)
-    }
-
-    return response.json() as Promise<T>
-  } catch (error) {
-    if ((error as DOMException).name === "AbortError") {
-      throw {
-        status: 0,
-        message: "La solicitud tardo demasiado tiempo. Intenta nuevamente.",
-      } as ApiError
-    }
-
-    if ((error as TypeError).name === "TypeError") {
-      throw createApiError(0)
-    }
-
-    throw error
-  } finally {
-    clearTimeout(timeout)
-  }
+  
+  // Si no es un error de Axios (ej. un error de sintaxis en el código), lo lanzamos crudo
+  throw error
 }
 
 // ---------- Endpoints ----------
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  return request<LoginResponse>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify(data),
-  })
+  try {
+    const response = await apiClient.post<LoginResponse>("/auth/login", data)
+    return response.data
+  } catch (error) {
+    handleAxiosError(error)
+  }
+}
+
+export async function logoutApi(): Promise<void> {
+  try {
+    await apiClient.post("/auth/logout")
+  } catch (error) {
+    handleAxiosError(error)
+  }
 }
 
 export async function register(data: RegisterRequest): Promise<string> {
-  return request<string>("/auth/register", {
-    method: "POST",
-    body: JSON.stringify(data),
-  })
+  try {
+    const response = await apiClient.post<string>("/auth/register", data)
+    return response.data
+  } catch (error) {
+    handleAxiosError(error)
+  }
 }
 
 export async function forgotPassword(data: ForgotPasswordRequest): Promise<string> {
-  return request<string>("/auth/forgot-password", {
-    method: "POST",
-    body: JSON.stringify(data),
-  })
+  try {
+    const response = await apiClient.post<string>("/auth/forgot-password", data)
+    return response.data
+  } catch (error) {
+    handleAxiosError(error)
+  }
 }
 
 export async function resetPassword(data: ResetPasswordRequest): Promise<string> {
-  return request<string>("/auth/reset-password", {
-    method: "POST",
-    body: JSON.stringify(data),
-  })
+  try {
+    const response = await apiClient.post<string>("/auth/reset-password", data)
+    return response.data
+  } catch (error) {
+    handleAxiosError(error)
+  }
 }
 
 export async function mfaSetup(userId: string): Promise<string> {
-  const params = new URLSearchParams({ user_id: userId })
-  return request<string>(`/auth/mfa/setup?${params}`, {
-    method: "POST",
-    headers: {},
-  })
+  try {
+    const response = await apiClient.post<string>(`/auth/mfa/setup?user_id=${userId}`)
+    return response.data
+  } catch (error) {
+    handleAxiosError(error)
+  }
 }
 
 export async function mfaVerify(userId: string, code: string): Promise<string> {
-  const params = new URLSearchParams({ user_id: userId, code })
-  return request<string>(`/auth/mfa/verify?${params}`, {
-    method: "POST",
-    headers: {},
-  })
+  try {
+    const response = await apiClient.post<string>(`/auth/mfa/verify?user_id=${userId}&code=${code}`)
+    return response.data
+  } catch (error) {
+    handleAxiosError(error)
+  }
 }
 
 export async function getCareers(): Promise<Career[]> {
-  return request<Career[]>("/auth/careers", {
-    method: "GET",
-  })
+  try {
+    const response = await apiClient.get<Career[]>("/auth/careers")
+    return response.data
+  } catch (error) {
+    handleAxiosError(error)
+  }
 }

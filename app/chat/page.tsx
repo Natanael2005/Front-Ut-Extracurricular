@@ -1,28 +1,14 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from "react"
+import React, { useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Bot, Send, User, ArrowLeft, Sparkles } from "lucide-react"
-import { useAuth } from "@/context/auth-context"
-import { askChatbot } from "@/lib/chat-api"
-// 1. Importamos el renderizador de Markdown
 import ReactMarkdown from "react-markdown"
 
-interface Message {
-  id: number
-  role: "user" | "bot"
-  text: string
-}
-
-const initialMessages: Message[] = [
-  {
-    id: 1,
-    role: "bot",
-    text: "¡Hola! Soy NexaBot, tu asistente virtual. Puedes preguntarme sobre los talleres extracurriculares o cualquier duda que tengas.",
-  },
-]
+import { useAuth } from "@/context/auth-context"
+import { useChat } from "@/hooks/use-chat" // ¡Nuestro nuevo super hook!
 
 const suggestedPrompts = [
   "¿Quién da el taller de ajedrez?",
@@ -33,100 +19,37 @@ const suggestedPrompts = [
 
 export default function ChatPage() {
   const router = useRouter()
-  const { isAuthenticated, isLoading, logout } = useAuth() 
+  const { isAuthenticated, isLoading } = useAuth() 
+  
+  // Extraemos toda la lógica desde nuestro Custom Hook con una sola línea
+  const {
+    messages,
+    inputValue,
+    isTyping,
+    messagesEndRef,
+    inputRef,
+    handleSend,
+    handleKeyDown,
+    handleTextareaInput
+  } = useChat()
 
-  const [messages, setMessages] = useState<Message[]>(initialMessages)
-  const [inputValue, setInputValue] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
-
+  // Guardia de Seguridad: Redirige si no está autenticado
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace("/auth/login")
     }
   }, [isLoading, isAuthenticated, router])
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages, isTyping])
-
+  // Auto-Focus: Pone el cursor en el input al entrar a la página
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       inputRef.current?.focus()
     }
-  }, [isLoading, isAuthenticated])
-
-  const handleSend = async (text?: string) => {
-    const messageText = text || inputValue.trim()
-    if (!messageText) return
-
-    const userMessage: Message = {
-      id: Date.now(),
-      role: "user",
-      text: messageText,
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setInputValue("")
-    setIsTyping(true) 
-
-    if (inputRef.current) {
-      inputRef.current.style.height = "auto"
-    }
-
-    try {
-      const token = localStorage.getItem("token")
-      if (!token) throw new Error("No hay sesión activa")
-
-      const data = await askChatbot(messageText, token)
-
-      // 2. Limpiamos los saltos de línea literales de la API
-      const textoFormateado = data.respuesta.replace(/\\n/g, '\n')
-
-      const botMessage: Message = {
-        id: Date.now() + 1,
-        role: "bot",
-        text: textoFormateado, 
-      }
-      setMessages((prev) => [...prev, botMessage])
-
-    } catch (error: any) {
-      if (error?.status === 401) {
-        logout()
-        return
-      }
-      
-      const errorMessage: Message = {
-        id: Date.now() + 1,
-        role: "bot",
-        text: "Lo siento, tuve un problema al procesar tu solicitud. Por favor, intenta de nuevo más tarde.",
-      }
-      setMessages((prev) => [...prev, errorMessage])
-    } finally {
-      setIsTyping(false) 
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
-  }
-
-  const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value)
-    e.target.style.height = "auto"
-    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`
-  }
+  }, [isLoading, isAuthenticated, inputRef])
 
   const showSuggestions = messages.length <= 1 && !isTyping
 
+  // Pantalla de carga inteligente
   if (isLoading || !isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
@@ -155,7 +78,7 @@ export default function ChatPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">NexaBot</p>
-              <p className="text-xs text-primary">En linea</p>
+              <p className="text-xs text-primary">En línea</p>
             </div>
           </div>
         </div>
@@ -170,6 +93,8 @@ export default function ChatPage() {
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-4 py-6 md:px-6">
+          
+          {/* Bienvenida y Sugerencias */}
           {showSuggestions && (
             <div className="mb-8 mt-8 flex flex-col items-center text-center md:mt-16">
               <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
@@ -194,6 +119,7 @@ export default function ChatPage() {
             </div>
           )}
 
+          {/* Renderizado de Mensajes */}
           <div className="flex flex-col gap-6">
             {messages.map((msg) => (
               <div
@@ -218,11 +144,9 @@ export default function ChatPage() {
                       : "rounded-tr-md bg-primary text-primary-foreground"
                   }`}
                 >
-                  {/* 3. AQUI RENDERIZAMOS EL MARKDOWN INTELIGENTE */}
                   {msg.role === "bot" ? (
                     <ReactMarkdown
                       components={{
-                        // Le decimos a Tailwind cómo pintar los estilos de Markdown
                         p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
                         ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,
                         ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2 space-y-1" {...props} />,
@@ -239,6 +163,7 @@ export default function ChatPage() {
               </div>
             ))}
 
+            {/* Animación de "Escribiendo..." */}
             {isTyping && (
               <div className="flex items-start gap-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
@@ -253,6 +178,8 @@ export default function ChatPage() {
                 </div>
               </div>
             )}
+            
+            {/* Ancla para el scroll automático */}
             <div ref={messagesEndRef} />
           </div>
         </div>
@@ -282,7 +209,7 @@ export default function ChatPage() {
             </Button>
           </div>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            NexaBot puede cometer errores. Verifica la informacion importante.
+            NexaBot puede cometer errores. Verifica la información importante.
           </p>
         </div>
       </div>

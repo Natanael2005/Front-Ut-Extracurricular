@@ -1,79 +1,39 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { QRCodeSVG } from "qrcode.react"
 import { AuthLayout } from "@/components/auth-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Shield, Loader2, QrCode, ArrowRight, Smartphone, Copy, CheckCircle2 } from "lucide-react"
-import { mfaSetup, mfaVerify, type ApiError } from "@/lib/auth-api"
 
-type Step = "generate" | "scan" | "verify" | "success"
+// Importamos nuestro nuevo super-hook
+import { useMfaSetup } from "@/hooks/use-mfa-setup"
 
 export default function MfaSetupPage() {
-  const router = useRouter()
-  const [step, setStep] = useState<Step>("generate")
-  const [userId, setUserId] = useState("")
-  const [mfaUri, setMfaUri] = useState("")
-  const [code, setCode] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [copied, setCopied] = useState(false)
-
-  // Paso 1: Generar el QR
-  const handleGenerateQR = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
-
-    try {
-      const uri = await mfaSetup(userId)
-      setMfaUri(uri)
-      setStep("scan")
-    } catch (err) {
-      const apiError = err as ApiError
-      setError(apiError.message || "Error al generar el codigo QR.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Paso 2: Verificar el codigo
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
-
-    try {
-      await mfaVerify(userId, code)
-      setStep("success")
-    } catch (err) {
-      const apiError = err as ApiError
-      setError(apiError.message || "Codigo invalido. Intenta de nuevo.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const copyUri = async () => {
-    try {
-      await navigator.clipboard.writeText(mfaUri)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // Fallback silencioso
-    }
-  }
+  // 1. Inyectamos la lógica limpiamente
+  const {
+    step, setStep,
+    userId, setUserId,
+    mfaUri,
+    code, setCode,
+    isLoading,
+    error,
+    copied,
+    router,
+    handleGenerateQR,
+    handleVerify,
+    copyUri
+  } = useMfaSetup()
 
   // --- Step: Generate ---
   if (step === "generate") {
     return (
       <AuthLayout
-        title="Configurar autenticacion MFA"
-        description="Protege tu cuenta con verificacion en dos pasos usando Google Authenticator."
+        title="Configurar autenticación MFA"
+        description="Protege tu cuenta con verificación en dos pasos usando Google Authenticator."
       >
         <form onSubmit={handleGenerateQR} className="flex flex-col gap-5">
           {error && (
@@ -102,7 +62,7 @@ export default function MfaSetupPage() {
               <Shield className="h-6 w-6 text-primary" />
             </div>
             <p className="text-center text-sm text-muted-foreground">
-              Primero, necesitamos tu ID de usuario para generar el codigo QR de configuracion.
+              Primero, necesitamos tu ID de usuario para generar el código QR de configuración.
             </p>
           </div>
 
@@ -130,12 +90,12 @@ export default function MfaSetupPage() {
             ) : (
               <QrCode className="h-4 w-4" />
             )}
-            {isLoading ? "Generando..." : "Generar codigo QR"}
+            {isLoading ? "Generando..." : "Generar código QR"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
             <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              Volver al inicio de sesion
+              Volver al inicio de sesión
             </Link>
           </p>
         </form>
@@ -147,8 +107,8 @@ export default function MfaSetupPage() {
   if (step === "scan") {
     return (
       <AuthLayout
-        title="Escanea el codigo QR"
-        description="Abre Google Authenticator y escanea el siguiente codigo."
+        title="Escanea el código QR"
+        description="Abre Google Authenticator y escanea el siguiente código."
       >
         <div className="flex flex-col gap-5">
           {/* Steps indicator */}
@@ -210,7 +170,7 @@ export default function MfaSetupPage() {
             onClick={() => setStep("verify")}
             className="mt-1 bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            Ya lo escanee
+            Ya lo escaneé
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
@@ -222,8 +182,8 @@ export default function MfaSetupPage() {
   if (step === "verify") {
     return (
       <AuthLayout
-        title="Verificar configuracion"
-        description="Ingresa el codigo de 6 digitos que muestra tu aplicacion de autenticacion."
+        title="Verificar configuración"
+        description="Ingresa el código de 6 dígitos que muestra tu aplicación de autenticación."
       >
         <form onSubmit={handleVerify} className="flex flex-col gap-5">
           {error && (
@@ -249,7 +209,7 @@ export default function MfaSetupPage() {
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="mfa_code" className="text-foreground">
-              Codigo de verificacion
+              Código de verificación
             </Label>
             <Input
               id="mfa_code"
@@ -263,7 +223,7 @@ export default function MfaSetupPage() {
               className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground tracking-[0.5em] text-center text-2xl font-mono"
             />
             <p className="text-xs text-muted-foreground">
-              El codigo se actualiza cada 30 segundos.
+              El código se actualiza cada 30 segundos.
             </p>
           </div>
 
@@ -285,7 +245,7 @@ export default function MfaSetupPage() {
             onClick={() => setStep("scan")}
             className="text-center text-sm text-primary hover:text-primary/80 font-medium transition-colors"
           >
-            Volver a ver el codigo QR
+            Volver a ver el código QR
           </button>
         </form>
       </AuthLayout>
@@ -296,7 +256,7 @@ export default function MfaSetupPage() {
   return (
     <AuthLayout
       title="MFA activado"
-      description="La autenticacion de dos factores ha sido configurada exitosamente."
+      description="La autenticación de dos factores ha sido configurada exitosamente."
     >
       <div className="flex flex-col items-center gap-6 py-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
@@ -304,7 +264,7 @@ export default function MfaSetupPage() {
         </div>
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            A partir de ahora, necesitaras ingresar un codigo de verificacion cada vez que inicies sesion.
+            A partir de ahora, necesitarás ingresar un código de verificación cada vez que inicies sesión.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             El MFA queda activo permanentemente en tu cuenta.
@@ -314,7 +274,7 @@ export default function MfaSetupPage() {
           className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
           onClick={() => router.push("/auth/login")}
         >
-          Ir a iniciar sesion
+          Ir a iniciar sesión
         </Button>
       </div>
     </AuthLayout>

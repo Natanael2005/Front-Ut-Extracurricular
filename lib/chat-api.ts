@@ -1,9 +1,6 @@
 // lib/chat-api.ts
+import { apiClient } from "./auth-api" // Importamos el motor de Axios
 
-// 1. Importamos tu función inteligente que maneja errores y timeouts
-import { request } from "./auth-api"
-
-// 2. Definimos la URL exclusiva de este microservicio
 const CHATBOT_API_URL = process.env.NEXT_PUBLIC_CHATBOT_API_URL
 
 export interface ChatResponse {
@@ -11,13 +8,13 @@ export interface ChatResponse {
   respuesta: string
 }
 
-// 3. El endpoint limpio y aislado
-export async function askChatbot(question: string, token: string): Promise<ChatResponse> {
-  return request<ChatResponse>(`${CHATBOT_API_URL}/chat/ask`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`, 
-    },
-    body: JSON.stringify({ pregunta: question }), 
-  })
+// Ya NO pedimos el token aquí
+export async function askChatbot(question: string): Promise<ChatResponse> {
+  // apiClient insertará las cookies (HttpOnly) mágicamente en este viaje
+  const response = await apiClient.post<ChatResponse>(
+    `${CHATBOT_API_URL}/chat/ask`, 
+    { pregunta: question }
+  )
+  
+  return response.data
 }

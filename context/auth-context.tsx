@@ -2,55 +2,73 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import { apiClient, logoutApi } from "@/lib/auth-api" // Importamos tu cliente Axios y la función de logout
 
-// 1. Definimos qué datos y funciones estarán disponibles globalmente
 interface AuthContextType {
   user_name: string | null
   isAuthenticated: boolean
-  isLoading: boolean // Clave para evitar el parpadeo visual
-  login: (token: string, userName: string) => void
-  logout: () => void
+  isLoading: boolean
+  login: (userName: string) => void 
+  logout: () => Promise<void>
 }
 
-// 2. Creamos el contexto
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// 3. Creamos el Proveedor (El componente que envolverá tu app)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [user_name, setUserName] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Al inicializar la app, buscamos la sesión en el navegador
+  // 1. El "Guardia de Seguridad" al recargar la página
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    const storedName = localStorage.getItem("user_name")
-
-    if (token) {
-      setIsAuthenticated(true)
-      setUserName(storedName || "Usuario")
+    const verifySession = async () => {
+      try {
+        // Intentamos pedir un nuevo Access Token. 
+        // Axios mandará la cookie Refresh automáticamente.
+        await apiClient.post("/auth/refresh")
+        
+        // Si el servidor responde OK (200), ¡la sesión es válida!
+        const storedName = localStorage.getItem("user_name")
+        setIsAuthenticated(true)
+        setUserName(storedName || "Usuario")
+      } catch (error) {
+        // Si falla (ej. el token expiró o borraron las cookies), limpiamos la interfaz
+        localStorage.removeItem("user_name")
+        setIsAuthenticated(false)
+        setUserName(null)
+      } finally {
+        // Pase lo que pase, apagamos la pantalla de "Verificando credenciales..."
+        setIsLoading(false)
+      }
     }
-    
-    // Una vez que terminamos de leer, apagamos el estado de carga
-    setIsLoading(false)
+
+    verifySession()
   }, [])
 
-  // Función global para iniciar sesión
-  const login = (token: string, userName: string) => {
-    localStorage.setItem("token", token)
+  // 2. Función para iniciar sesión visualmente
+  const login = (userName: string) => {
+    // Solo guardamos el nombre para mostrarlo en el Navbar.
+    // El token ya está seguro en la bóveda de cookies del navegador.
     localStorage.setItem("user_name", userName)
     setIsAuthenticated(true)
     setUserName(userName)
   }
 
-  // Función global para cerrar sesión
-  const logout = () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("user_name")
-    setIsAuthenticated(false)
-    setUserName(null)
-    router.push("/")
+  // 3. Función para cerrar sesión de forma segura
+  const logout = async () => {
+    try {
+      // Le ordenamos al servidor de Python que destruya las cookies
+      await logoutApi() 
+    } catch (error) {
+      console.error("Error al cerrar sesión en el servidor", error)
+    } finally {
+      // Limpiamos la memoria del frontend
+      localStorage.removeItem("user_name")
+      setIsAuthenticated(false)
+      setUserName(null)
+      router.push("/auth/login")
+    }
   }
 
   return (
@@ -60,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// 4. Creamos el Hook personalizado para consumirlo fácilmente
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {

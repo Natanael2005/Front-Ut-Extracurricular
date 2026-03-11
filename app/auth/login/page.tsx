@@ -1,29 +1,25 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { motion, Variants } from "framer-motion"
 
-// Importamos tus componentes y el layout maestro
+// Componentes UI
 import { AuthLayout } from "@/components/auth-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, Shield, Loader2, Mail, Lock } from "lucide-react"
 
-import { login as apiLogin, type ApiError } from "@/lib/auth-api" 
-import { useAuth } from "@/context/auth-context" 
+// Importamos nuestro nuevo super-hook
+import { useLogin } from "@/hooks/use-login"
 
-// 1. Variantes de animación para el efecto cascada (sin errores de tipos)
+// Variantes de animación
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.3 // Espera a que la tarjeta del AuthLayout se asiente
-    }
+    transition: { staggerChildren: 0.08, delayChildren: 0.3 }
   }
 }
 
@@ -32,52 +28,22 @@ const itemVariants: Variants = {
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { 
-      duration: 0.5, 
-      ease: [0.22, 1, 0.36, 1] // Curva suave tipo seda
-    }
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
   }
 }
 
 export default function LoginPage() {
-  const router = useRouter()
-  const { login } = useAuth() 
-
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [mfaCode, setMfaCode] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [showMfa, setShowMfa] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-
-  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
-
-    try {
-      const data = await apiLogin({
-        email,
-        password,
-        ...(showMfa && mfaCode ? { mfa_code: mfaCode } : {}),
-      })
-      login(data.access_token, data.user_name)
-      router.push("/chat")
-    } catch (err) {
-      const apiError = err as ApiError
-      if (apiError.status === 401 && !showMfa) {
-        setShowMfa(true)
-        setError("Se requiere el código de autenticación MFA.")
-      } else if (apiError.status === 403) {
-        setError("Cuenta bloqueada temporalmente. Intenta de nuevo en 1 minuto.")
-      } else {
-        setError(apiError.message || "Error al iniciar sesión.")
-      }
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // 1. Inyectamos toda la lógica con una sola línea
+  const {
+    email, setEmail,
+    password, setPassword,
+    mfaCode, setMfaCode,
+    showPassword, setShowPassword,
+    showMfa,
+    isLoading,
+    error,
+    handleSubmit
+  } = useLogin()
 
   return (
     <AuthLayout
@@ -113,6 +79,7 @@ export default function LoginPage() {
             <Input
               id="email"
               type="email"
+              autoComplete="username"
               placeholder="tu.matricula@utcancun.edu.mx"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -140,6 +107,7 @@ export default function LoginPage() {
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

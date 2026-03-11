@@ -1,24 +1,23 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import Link from "next/link"
-import { motion, Variants } from "framer-motion" // Importamos motion
+import { motion, Variants } from "framer-motion"
 import { AuthLayout } from "@/components/auth-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Mail } from "lucide-react" 
-import { forgotPassword, type ApiError } from "@/lib/auth-api"
 
-// --- CONFIGURACIÓN DE ANIMACIONES (Sin errores de tipos) ---
+// Importamos nuestro nuevo super-hook
+import { useForgotPassword } from "@/hooks/use-forgot-password"
+
+// --- CONFIGURACIÓN DE ANIMACIONES ---
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2
-    }
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
   }
 }
 
@@ -27,34 +26,19 @@ const itemVariants: Variants = {
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { 
-      duration: 0.5, 
-      ease: [0.22, 1, 0.36, 1] // Curva de seda optimizada
-    }
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
   }
 }
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [sent, setSent] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
-
-    try {
-      await forgotPassword({ email })
-      setSent(true)
-    } catch (err) {
-      const apiError = err as ApiError
-      setError(apiError.message || "Error al enviar la solicitud.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // 1. Inyectamos toda la lógica con una sola línea
+  const {
+    email, setEmail,
+    isLoading,
+    error,
+    sent,
+    handleSubmit
+  } = useForgotPassword()
 
   // Vista de éxito (Correo enviado)
   if (sent) {
