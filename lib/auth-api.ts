@@ -6,11 +6,10 @@ import axios, { AxiosError } from "axios"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-// 1. CREAMOS LA INSTANCIA DE AXIOS (El nuevo motor de peticiones)
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 120_000, // 2 minutos de espera máxima
-  withCredentials: true, // ¡LA MAGIA! Esto obliga al navegador a enviar y recibir cookies seguras
+  withCredentials: true, 
   headers: {
     "Content-Type": "application/json",
   },
